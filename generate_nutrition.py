@@ -1,26 +1,25 @@
 #!/bin/python3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 import os
 import subprocess
 
 def get_login_credentials():
     user = os.getlogin()
-    email_login = password_login = ''
     if ( user == 'alex' ):
-        email_login = 'alexander@bocken.org'
         out = subprocess.check_output(['pass', 'show', 'Fitness/cronometer'])
-        password_login = out.decode("utf-8").partition('\n')[0] # only read first line of pass file
+        # using a multi line password file for user and pw
+        email_login = out.decode("utf-8").split('\n')[1].split(': ')[1]
+        password_login = out.decode("utf-8").split('\n')[0]
     elif ( user == 'till'):
         email_login = '<email>' #TODO
         out = subprocess.check_output(['pass', 'show', 'Fitness/cronometer'])
         password_login = out.decode("utf-8")
     else:
-        email_login = os.environ['RN_EMAIL']
-        password_login = os.environ['RN_PW']
-
-    assert email_login, "could not find email for this user. Implement method first or use env vars"
-    assert password_login, "could not find password for this user. Implement method first or use env vars"
+        email_login = os.environ.get('RN_EMAIL')
+        password_login = os.environ.get('RN_PW')
+        assert email_login and password_login, "please setup credential get method for this user or use env vars (RN_EMAIL & RN_PW)"
 
     return email_login, password_login
 
@@ -36,8 +35,16 @@ def login_to_cronometer(email_login, password_login):
     button.click()
 
 email_login, password_login = get_login_credentials()
+
 driver = webdriver.Chrome()
+options = Options()
+
+#works for login, consider slowing down for other parts or using waits
+#https://www.selenium.dev/documentation/webdriver/capabilities/shared/#pageloadstrategy
+#https://www.selenium.dev/documentation/webdriver/waits/
+options.page_load_strategy = 'none'
 login_to_cronometer(email_login, password_login)
+options.page_load_strategy = 'normal' #TODO, temp remove if possible
 
 foods_link = driver.find_element(by=By.LINK_TEXT, value="Foods")
 foods_link.click()
