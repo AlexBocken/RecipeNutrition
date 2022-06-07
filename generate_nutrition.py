@@ -34,6 +34,25 @@ def login_to_cronometer(email_login, password_login):
     button.click()
     WebDriverWait(driver, timeout=10).until(lambda d: d.title != "Cronometer Login")
 
+def add_ingredient(amount, ingredient):
+    '''Assumes that it starts on recipe page and adds one ingredient
+    to the recipe
+    amount: string which needs to be parsed to understand
+                a) amount
+                b) unit
+    ingredient: string with name for ingredient
+    '''
+    img = driver.find_element(By.XPATH, value="//img[@title='Add Ingredient']")
+    print('Found Add ingredient img')
+    img.click()
+    search = driver.find_element(By.CSS_SELECTOR, value="div > img + input")
+    search.send_keys(ingredient)
+    ingredient_popup = driver.find_element(By.XPATH, value='//div[@class="popupContent"]')
+    #first_result= ingredient_popup.find_element(By.XPATH, value='/div/div[@class="titlebar"]/following-sibling::div/div/div/div/div/div/div/table/tbody/tr[@class="prettyTable-header"]/following-sibling::tr[1]/td[1]')
+    ingredient_popup.find_element(By.XPATH, value="//img/following-sibling::button[text()='Search']").click()
+    first_result= ingredient_popup.find_element(By.XPATH, value='//tr[@class="prettyTable-header"]/following-sibling::tr[1]/td[1]')
+    first_result.click()
+
 
 email_login, password_login = get_login_credentials()
 
@@ -50,4 +69,7 @@ login_to_cronometer(email_login, password_login)
 driver.get("https://cronometer.com/#foods")
 add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
 add_recipe.click()
+WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//img[@title='Add Ingredient']"))
+add_ingredient("300 g", "Magerquark")
+
 #print(test)
