@@ -14,8 +14,8 @@ def get_login_credentials():
         email_login = out.decode("utf-8").split('\n')[1].split(': ')[1]
         password_login = out.decode("utf-8").split('\n')[0]
     elif ( user == 'till'):
-        email_login = '<email>' #TODO
-        out = subprocess.check_output(['pass', 'show', 'Fitness/cronometer'])
+        email_login = 'spam@dieminger.ch' #TODO
+        out = subprocess.check_output(['pass', 'show', 'cronometer.com/spam@dieminger.ch'])
         password_login = out.decode("utf-8")
     else:
         email_login = os.environ.get('RN_EMAIL')
