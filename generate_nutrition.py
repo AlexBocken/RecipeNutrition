@@ -17,8 +17,8 @@ def get_login_credentials():
         email_login = out.decode("utf-8").split('\n')[1].split(': ')[1]
         password_login = out.decode("utf-8").split('\n')[0]
     elif ( user == 'till'):
-        email_login = '<email>' #TODO
-        out = subprocess.check_output(['pass', 'show', 'Fitness/cronometer'])
+        email_login = 'spam@dieminger.ch' #TODO
+        out = subprocess.check_output(['pass', 'show', 'cronometer.com/spam@dieminger.ch'])
         password_login = out.decode("utf-8")
     else:
         email_login = os.environ.get('RN_EMAIL')
@@ -97,6 +97,9 @@ def add_ingredient(amount, unit, ingredient):
     add_button = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]//button[text()="Add"]')
     add_button.click()
 
+def remove_cookie_banner():
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
+
 email_login, password_login = get_login_credentials()
 
 chrome_options = Options()
@@ -110,6 +113,9 @@ driver = webdriver.Chrome(options=chrome_options)
 login_to_cronometer(email_login, password_login)
 
 driver.get("https://cronometer.com/#foods")
+
+remove_cookie_banner()
+
 add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
 add_recipe.click()
 WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//img[@title='Add Ingredient']"))
