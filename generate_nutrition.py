@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import os
 import subprocess
 
@@ -34,6 +35,8 @@ def login_to_cronometer(email_login, password_login):
     button.click()
     WebDriverWait(driver, timeout=10).until(lambda d: d.title != "Cronometer Login")
 
+def remove_cookie_banner():
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
 email_login, password_login = get_login_credentials()
 
@@ -48,6 +51,9 @@ driver = webdriver.Chrome(options=chrome_options)
 login_to_cronometer(email_login, password_login)
 
 driver.get("https://cronometer.com/#foods")
+
+remove_cookie_banner()
+
 add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
 add_recipe.click()
 #print(test)
