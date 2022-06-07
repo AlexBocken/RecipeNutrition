@@ -6,6 +6,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import os
 import subprocess
+from datetime import date
+import time
 
 def get_login_credentials():
     user = os.getlogin()
@@ -38,6 +40,36 @@ def login_to_cronometer(email_login, password_login):
 def remove_cookie_banner():
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
+
+def change_meta_data(recipe_name):
+    today = date.today()
+    name_box = driver.find_element(By.XPATH, '//input[@title="New Recipe"]')
+    name_box.click()
+    name_box.clear()
+    name_box.send_keys(recipe_name)
+    notes_box = driver.find_element(By.XPATH,'//textarea[@class="gwt-TextArea"]')
+    notes_box.click()
+    notes_box.send_keys(f"Added on {today.strftime('%d.%m.%Y')}")
+
+def change_serving_size(serving_size):
+    serving_size_image = driver.find_element(By.XPATH, value="//img[@title='Add Measure']")
+    serving_size_image.click()
+    serving_size_field = driver.find_element(By.XPATH, value='/html/body/div[1]/div[4]/div[2]/div[3]/div/div/table/tbody/tr[2]/td/div/div[1]/div/div/div[2]/div[2]/div[2]/div[4]/div[1]/div[5]/div[2]/table/tbody/tr/td/table/tbody/tr[2]/td[3]')
+    serving_size_field.click()
+    serving_size_field = driver.find_element(By.XPATH, value='/html/body/div[1]/div[4]/div[2]/div[3]/div/div/table/tbody/tr[2]/td/div/div[1]/div/div/div[2]/div[2]/div[2]/div[4]/div[1]/div[5]/div[2]/table/tbody/tr/td/table/tbody/tr[2]/td[3]/input')
+    serving_size_field.send_keys(serving_size)
+
+def save_recipe():
+    save_button = driver.find_element(By.XPATH, value="//button[text()='Save Changes']")
+    save_button.click()
+
+def export_recipe():
+    time.sleep(1)
+    menu_button = driver.find_element(By.XPATH, value="/html/body/div[1]/div[4]/div[2]/div[3]/div/div/table/tbody/tr[2]/td/div/div[1]/div/div/div[2]/div[2]/div[2]/div[1]/img")
+    menu_button.click()
+    export_div = driver.find_element(By.XPATH, value="//div[contains(@class, 'gwt-Label') and text()='Export to CSV File...']")
+    export_div.click()
+
 email_login, password_login = get_login_credentials()
 
 chrome_options = Options()
@@ -56,4 +88,13 @@ remove_cookie_banner()
 
 add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
 add_recipe.click()
-#print(test)
+
+
+change_meta_data("test")
+change_serving_size("5")
+
+time.sleep(20)
+
+save_recipe()
+export_recipe()
+time.sleep(1)
