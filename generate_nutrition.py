@@ -62,7 +62,7 @@ def match_unit(select_list, amount, unit):
             if unit in el.text:
                 return amount, el.text
         print("Found no matching unit, please select proper unit and amount manually")
-        return "manual", "manual"
+        return None, None
 
 def add_ingredient(amount, unit, ingredient):
     '''Assumes that it starts on recipe page and adds one ingredient
@@ -71,7 +71,7 @@ def add_ingredient(amount, unit, ingredient):
     unit: unit of amount (e.g. "g" for grams)
     ingredient: string with name for ingredient
     '''
-    print(f'Trying to add {amount} * {unit} of {ingredient}')
+    print(f'Trying to add {amount} {unit} of {ingredient}')
 
     try:
         #go to ingredient popup
@@ -104,17 +104,24 @@ def add_ingredient(amount, unit, ingredient):
     options = unit_select_object.options
 
     amount, element_text = match_unit(options, amount,  unit)
+    amount_el = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/input[@class="input-enabled"]')
     add_button = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]//button[text()="Add"]')
-    if(amount == 'manual'):
+    if(amount is None):
         print("Please press enter in this window when manual entry is done.", end='')
         input()
+        unit = unit_select_object.first_selected_option.text
+        amount = amount_el.get_attribute("value")
         try:
             add_button.click()
+            print(f'Added {amount} * "{unit}" of "{found_ingredient_name}"')
+        except ElementClickInterceptedException:
+            remove_cookie_banner()
+            add_ingredient(amount, unit, ingredient)
         except StaleElementReferenceException:
-            return
+            pass
+        return
     else:
         unit_select_object.select_by_visible_text(element_text)
-        amount_el = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/input[@class="input-enabled"]')
         amount_el.clear()
         amount_el.send_keys(amount)
 
@@ -128,9 +135,6 @@ def add_ingredient(amount, unit, ingredient):
 
 def remove_cookie_banner():
     print("Removing cookie banner...")
-    add_button.click()
-
-def remove_cookie_banner():
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
 def add_recipe(name, servings, ingredients):
@@ -148,12 +152,9 @@ if(__name__ == "__main__"):
 
     chrome_options = Options()
     chrome_options.add_argument('--force-device-scale-factor=1.5')
-    chrome_options.page_load_strategy = 'normal'
+    chrome_options.page_load_strategy = 'eager'
 
     driver = webdriver.Chrome(options=chrome_options)
-    #works for login, consider slowing down for other parts or using waits
-    #https://www.selenium.dev/documentation/webdriver/capabilities/shared/#pageloadstrategy
-    #https://www.selenium.dev/documentation/webdriver/waits/
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
