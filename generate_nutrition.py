@@ -87,11 +87,11 @@ def add_ingredient(amount, unit, ingredient):
     spinner_xpath_expr = '//div[@class="popupContent"]//img[@src="img/spin2.gif"]'
     driver.find_element(By.XPATH, value='//div[@class="popupContent"]//button[text()="Search"]').click()
     try:
-       WebDriverWait(driver, timeout=10).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
-    except NoSuchElementException:
+       WebDriverWait(driver, timeout=2).until(EC.visibility_of_element_located((By.XPATH, spinner_xpath_expr)))
+       WebDriverWait(driver, timeout=2).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
+    except (NoSuchElementException, TimeoutException) as e:
         sleep(2) #could be cleaner, let's be real, doesn't have to be
         pass
-
     #click on first result
     first_result = driver.find_element(By.XPATH, value='//div[@class="popupContent"]//tr[@class="prettyTable-header"]/following-sibling::tr[1]/td[1]/div[@class="gwt-Label"]')
     first_result.click()
@@ -143,15 +143,19 @@ def add_recipe(name, servings, ingredients):
        servings: int amount of servings in recipe
        ingredients: list of three-tuple (amount, unit, ingredient)
     '''
-    change_meta_data(titel)
-    change_servings(servings)
     add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
     add_recipe.click()
+    change_meta_data(titel)
+    try:
+        change_servings(servings)
+    except ElementClickInterceptedException:
+        remove_cookie_banner()
+        change_servings(servings)
     for amount, unit, ingredient in ingredients:
         add_ingredient(amount, unit, ingredient)
     save_name = name.replace(" ", "_").lower()
     save_export_recipe(save_name)
-    
+
 
 def change_meta_data(recipe_name):
     today = date.today()
@@ -169,7 +173,7 @@ def change_servings(servings):
     servings_field = driver.find_element(By.XPATH, value='//div[text()="Servings Per Recipe"]/parent::td/parent::tr/parent::tbody/tr[2]/td[3]')
     servings_field.click()
     servings_field = driver.find_element(By.XPATH, value='//div[text()="Servings Per Recipe"]/parent::td/parent::tr/parent::tbody/tr[2]/td[3]/input')
-    servings_field.send_keys(serving_size)
+    servings_field.send_keys(servings)
 
 def save_export_recipe(save_name):
     save_button = driver.find_element(By.XPATH, value="//button[text()='Save Changes']")
@@ -188,10 +192,11 @@ if(__name__ == "__main__"):
     email_login, password_login = get_login_credentials()
 
     # INPUT FROM PARSER
-    global save_location = "/tmp/nutrition" #TOOO: should be cleaner
+    global save_location #TODO: should be cleaner if possible
+    save_location = "/tmp/nutrition"
     titel="Name des Rezeptes"
     servings = 5
-    
+
     chrome_options = Options()
     chrome_options.add_argument('--force-device-scale-factor=1.5')
     prefs = {"download.default_directory": save_location,"download.prompt_for_download": False, "download.directory_upgrade": True }
