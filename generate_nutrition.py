@@ -9,6 +9,7 @@ from selenium.common.exceptions import *
 from time import sleep
 import os
 import subprocess
+from datetime import date
 
 
 def get_login_credentials():
@@ -19,7 +20,7 @@ def get_login_credentials():
         email_login = out.decode("utf-8").split('\n')[1].split(': ')[1]
         password_login = out.decode("utf-8").split('\n')[0]
     elif ( user == 'till'):
-        email_login = 'spam@dieminger.ch' #TODO
+        email_login = 'spam@dieminger.ch'
         out = subprocess.check_output(['pass', 'show', 'cronometer.com/spam@dieminger.ch'])
         password_login = out.decode("utf-8")
     else:
@@ -132,30 +133,73 @@ def add_ingredient(amount, unit, ingredient):
         remove_cookie_banner()
         add_ingredient(amount, unit, ingredient)
 
-
 def remove_cookie_banner():
     print("Removing cookie banner...")
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
 def add_recipe(name, servings, ingredients):
-    '''name: string of recipe name
+    '''Main loop for a single recipe. Adding name, servings, ingredients and export after it's done
+       name: string of recipe name
        servings: int amount of servings in recipe
        ingredients: list of three-tuple (amount, unit, ingredient)
     '''
+    change_meta_data(titel)
+    change_servings(servings)
     add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
     add_recipe.click()
     for amount, unit, ingredient in ingredients:
         add_ingredient(amount, unit, ingredient)
+    save_name = name.replace(" ", "_").lower()
+    save_export_recipe(save_name)
+    
+
+def change_meta_data(recipe_name):
+    today = date.today()
+    name_box = driver.find_element(By.XPATH, '//input[@title="New Recipe"]')
+    name_box.click()
+    name_box.clear()
+    name_box.send_keys(recipe_name)
+    notes_box = driver.find_element(By.XPATH,'//textarea[@class="gwt-TextArea"]')
+    notes_box.click()
+    notes_box.send_keys(f"Added on {today.strftime('%d.%m.%Y')}")
+
+def change_servings(servings):
+    servings_image = driver.find_element(By.XPATH, value="//img[@title='Add Measure']")
+    servings_image.click()
+    servings_field = driver.find_element(By.XPATH, value='//div[text()="Servings Per Recipe"]/parent::td/parent::tr/parent::tbody/tr[2]/td[3]')
+    servings_field.click()
+    servings_field = driver.find_element(By.XPATH, value='//div[text()="Servings Per Recipe"]/parent::td/parent::tr/parent::tbody/tr[2]/td[3]/input')
+    servings_field.send_keys(serving_size)
+
+def save_export_recipe(save_name):
+    save_button = driver.find_element(By.XPATH, value="//button[text()='Save Changes']")
+    save_button.click()
+    sleep(1) # Wait for website to save the file
+    menu_button = driver.find_element(By.XPATH, value="//div[@class='GO-RHEKCA3']/img")
+    menu_button.click()
+    export_div = driver.find_element(By.XPATH, value="//div[contains(@class, 'gwt-Label') and text()='Export to CSV File...']")
+    export_div.click()
+    sleep(2) # wait for file to be downloaded TODO: cleanup
+    os.system(f"mv {save_location}/food.csv {save_location}/{save_name}.csv") # move file to be named after recipe
+
+
 
 if(__name__ == "__main__"):
     email_login, password_login = get_login_credentials()
 
+    # INPUT FROM PARSER
+    global save_location = "/tmp/nutrition" #TOOO: should be cleaner
+    titel="Name des Rezeptes"
+    servings = 5
+    
     chrome_options = Options()
     chrome_options.add_argument('--force-device-scale-factor=1.5')
+    prefs = {"download.default_directory": save_location,"download.prompt_for_download": False, "download.directory_upgrade": True }
+    chrome_options.add_experimental_option('prefs', prefs)
     chrome_options.page_load_strategy = 'eager'
 
     driver = webdriver.Chrome(options=chrome_options)
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
-    add_recipe("test", 1, [ (3, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
+    add_recipe(titel, servings, [ (3, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
