@@ -57,8 +57,12 @@ def match_unit(select_list, amount, unit):
         for el in select_list:
             if el.text == unit:
                 return amount, el.text
-        print("Found no matching unit") #TODO: soft catch and continue
-        exit(1)
+        for el in select_list:
+            #fuzzier, more unprecise, matching as an absolute fallback
+            if unit in el.text:
+                return amount, el.text
+        print("Found no matching unit, please select proper unit and amount manually")
+        return "manual", "manual"
 
 def add_ingredient(amount, unit, ingredient):
     '''Assumes that it starts on recipe page and adds one ingredient
@@ -67,6 +71,7 @@ def add_ingredient(amount, unit, ingredient):
     unit: unit of amount (e.g. "g" for grams)
     ingredient: string with name for ingredient
     '''
+    print(f'Trying to add {amount} * {unit} of {ingredient}')
     try:
         #go to ingredient popup
         driver.find_element(By.XPATH, value="//img[@title='Add Ingredient']").click()
@@ -80,7 +85,7 @@ def add_ingredient(amount, unit, ingredient):
     spinner_xpath_expr = '//div[@class="popupContent"]//img[@src="img/spin2.gif"]'
     driver.find_element(By.XPATH, value='//div[@class="popupContent"]//button[text()="Search"]').click()
     try:
-       WebDriverWait(driver, timeout=10).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
+       WebDriverWait(driver, timeout=60).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
     except NoSuchElementException:
         sleep(2) #could be cleaner, let's be real, doesn't have to be
         pass
@@ -88,7 +93,7 @@ def add_ingredient(amount, unit, ingredient):
     #click on first result
     first_result = driver.find_element(By.XPATH, value='//div[@class="popupContent"]//tr[@class="prettyTable-header"]/following-sibling::tr[1]/td[1]/div[@class="gwt-Label"]')
     first_result.click()
-
+    found_ingredient_name = first_result.text
     #wait for amount and unit input to appear
     unit_el_xpath_expr = '//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/select[@class="gwt-ListBox"]'
     WebDriverWait(driver, timeout=10).until( EC.presence_of_element_located( (By.XPATH, unit_el_xpath_expr) ) )
@@ -98,16 +103,30 @@ def add_ingredient(amount, unit, ingredient):
     options = unit_select_object.options
 
     amount, element_text = match_unit(options, amount,  unit)
-    unit_select_object.select_by_visible_text(element_text)
-    amount_el = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/input[@class="input-enabled"]')
-    amount_el.clear()
-    amount_el.send_keys(amount)
-    print(f'Added {amount} * "{element_text}" of {ingredient}')
-
     add_button = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]//button[text()="Add"]')
-    add_button.click()
+    if(amount == 'manual'):
+        print("Please press enter in this window when manual entry is done.", end='')
+        input()
+        try:
+            add_button.click()
+        except StaleElementReferenceException:
+            return
+    else:
+        unit_select_object.select_by_visible_text(element_text)
+        amount_el = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/input[@class="input-enabled"]')
+        amount_el.clear()
+        amount_el.send_keys(amount)
+
+    try:
+        add_button.click()
+        print(f'Added {amount} * "{element_text}" of "{found_ingredient_name}"')
+    except ElementClickInterceptedException:
+        remove_cookie_banner()
+        add_ingredient(amount, unit, ingredient)
+
 
 def remove_cookie_banner():
+    print("Removing cookie banner...")
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
 def add_recipe(name, servings, ingredients):
@@ -134,4 +153,4 @@ if(__name__ == "__main__"):
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
-    add_recipe("test", 1, [ (300, "TL", "Pfefferminz") ])
+    add_recipe("test", 1, [ (300, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
