@@ -11,6 +11,7 @@ import os
 import subprocess
 from datetime import date
 
+
 def get_login_credentials():
     user = os.getlogin()
     if ( user == 'alex' ):
@@ -31,8 +32,8 @@ def get_login_credentials():
 
 def login_to_cronometer(email_login, password_login):
     driver.get("https://cronometer.com/login/")
-    email_input = driver.find_element(by=By.CSS_SELECTOR, value="input#usernameBox.textbox--1.login-fields")
-    password_input = driver.find_element(by=By.CSS_SELECTOR, value="input#password.textbox--1.login-fields")
+    email_input = driver.find_element(By.CSS_SELECTOR, value="input#usernameBox.textbox--1.login-fields")
+    password_input = driver.find_element(By.CSS_SELECTOR, value="input#password.textbox--1.login-fields")
     email_input.send_keys(email_login)
     password_input.send_keys(password_login)
     button = driver.find_element(by=By.CSS_SELECTOR, value="button#login-button.submit--1.login-fields")
@@ -125,13 +126,9 @@ def add_ingredient(amount, unit, ingredient):
         remove_cookie_banner()
         add_ingredient(amount, unit, ingredient)
 
-
 def remove_cookie_banner():
     print("Removing cookie banner...")
     add_button.click()
-
-def remove_cookie_banner():
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
 def add_recipe(name, servings, ingredients):
     '''name: string of recipe name
@@ -203,3 +200,4 @@ if(__name__ == "__main__"):
     change_serving_size(serving_size)
 
     save_export_recipe(save_location, save_name)
+
