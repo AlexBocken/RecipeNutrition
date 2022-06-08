@@ -100,23 +100,29 @@ def add_ingredient(amount, unit, ingredient):
 def remove_cookie_banner():
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
-email_login, password_login = get_login_credentials()
+def add_recipe(name, servings, ingredients):
+    '''name: string of recipe name
+       servings: int amount of servings in recipe
+       ingredients: list of three-tuple (amount, unit, ingredient)
+    '''
+    add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
+    add_recipe.click()
+    for amount, unit, ingredient in ingredients:
+        add_ingredient(amount, unit, ingredient)
 
-chrome_options = Options()
-chrome_options.add_argument('--force-device-scale-factor=1.5')
-chrome_options.page_load_strategy = 'normal'
+if(__name__ == "__main__"):
+    email_login, password_login = get_login_credentials()
 
-driver = webdriver.Chrome(options=chrome_options)
-#works for login, consider slowing down for other parts or using waits
-#https://www.selenium.dev/documentation/webdriver/capabilities/shared/#pageloadstrategy
-#https://www.selenium.dev/documentation/webdriver/waits/
-login_to_cronometer(email_login, password_login)
+    chrome_options = Options()
+    chrome_options.add_argument('--force-device-scale-factor=1.5')
+    chrome_options.page_load_strategy = 'normal'
 
-driver.get("https://cronometer.com/#foods")
+    driver = webdriver.Chrome(options=chrome_options)
+    #works for login, consider slowing down for other parts or using waits
+    #https://www.selenium.dev/documentation/webdriver/capabilities/shared/#pageloadstrategy
+    #https://www.selenium.dev/documentation/webdriver/waits/
+    login_to_cronometer(email_login, password_login)
 
-remove_cookie_banner()
-
-add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
-add_recipe.click()
-WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//img[@title='Add Ingredient']"))
-add_ingredient(300, "TL", "Pfefferminz") # For testing, TODO: integrate into adding ingredients loop
+    driver.get("https://cronometer.com/#foods")
+ #   remove_cookie_banner()
+    add_recipe("test", 1, [ (300, "TL", "Pfefferminz") ])
