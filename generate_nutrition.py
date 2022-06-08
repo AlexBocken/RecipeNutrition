@@ -72,6 +72,7 @@ def add_ingredient(amount, unit, ingredient):
     ingredient: string with name for ingredient
     '''
     print(f'Trying to add {amount} * {unit} of {ingredient}')
+
     try:
         #go to ingredient popup
         driver.find_element(By.XPATH, value="//img[@title='Add Ingredient']").click()
@@ -85,7 +86,7 @@ def add_ingredient(amount, unit, ingredient):
     spinner_xpath_expr = '//div[@class="popupContent"]//img[@src="img/spin2.gif"]'
     driver.find_element(By.XPATH, value='//div[@class="popupContent"]//button[text()="Search"]').click()
     try:
-       WebDriverWait(driver, timeout=60).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
+       WebDriverWait(driver, timeout=10).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
     except NoSuchElementException:
         sleep(2) #could be cleaner, let's be real, doesn't have to be
         pass
@@ -127,6 +128,9 @@ def add_ingredient(amount, unit, ingredient):
 
 def remove_cookie_banner():
     print("Removing cookie banner...")
+    add_button.click()
+
+def remove_cookie_banner():
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
 def add_recipe(name, servings, ingredients):
@@ -153,4 +157,4 @@ if(__name__ == "__main__"):
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
-    add_recipe("test", 1, [ (300, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
+    add_recipe("test", 1, [ (3, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
