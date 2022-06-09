@@ -69,8 +69,16 @@ def match_unit(select_list, amount, unit):
     '''
     if unit == 'g':
         for el in select_list:
-            if el.text == 'g':
+            if 'g' == el.text:
                 return amount, el.text
+        for el in select_list:
+            if 'g' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'g', el.text)
+                return amount, el.text
+    if unit == 'kg':
+        return match_unit(select_list, 1000*amount, 'g')
+    if unit == 'dkg':
+        return match_unit(select_list, 100*amount, 'g')
     elif( re.search('m(l|L)', unit) ):
         for el in select_list:
             if (unit_match := re.search('m(l|L)', el.text) ):
@@ -281,5 +289,5 @@ if(__name__ == "__main__"):
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
-    add_recipe(titel, servings, [ (2, 'dl', 'MinusL, Milch, Proteingehalt, 0.9%'), (2, "mittelgroß", "Apfel"), (3, "TL", "Pfefferminz"), (100, "ml", "Milch"), (200, "ml", "Wasser")])
-    #driver.quit()
+    add_recipe(titel, servings, [ (2, 'dl', 'MinusL, Milch, Proteingehalt, 0.9%'), (2, "mittelgroß", "Apfel"), (3, "TL", "Pfefferminz"), (100, "ml", "Milch"), (200, "ml", "Wasser"), (1, 'kg', 'Mehl, weiss'), (1, 'dkg', 'Dm Bio, Hafer Joghurt, Natur')])
+#    driver.quit()
