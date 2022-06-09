@@ -5,7 +5,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import *
+from selenium.common.exceptions import * # pyright: ignore
 from time import sleep
 import re
 import os
