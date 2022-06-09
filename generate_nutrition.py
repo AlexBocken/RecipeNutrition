@@ -54,8 +54,8 @@ def adjust_amount_by_multiplier(amount, unit, select_text):
     if not mul:
         mul = '1'
     if '/' in mul:
-        n = float( re.sub('([0-9])*/[0-9]*', '\\1', mul) )
-        d = float( re.sub('([0-9])*/[0-9]*', '\\2', mul) )
+        n = float( re.sub('([0-9])*/([0-9])*', '\\1', mul) )
+        d = float( re.sub('([0-9])*/([0-9])*', '\\2', mul) )
         mul = n / d
     else:
         mul = float(mul)
@@ -73,8 +73,8 @@ def match_unit(select_list, amount, unit):
                 return amount, el.text
     elif( re.search('m(l|L)', unit) ):
         for el in select_list:
-            if 'mL' in el.text:
-                amount = adjust_amount_by_multiplier(amount, 'mL', el.text)
+            if (unit_match := re.search('m(l|L)', el.text) ):
+                amount = adjust_amount_by_multiplier(amount, unit_match.group(0) , el.text)
                 return amount, el.text
         for el in select_list:
             if( re.search('cup (-|—)', el.text) ):
@@ -190,6 +190,8 @@ def add_ingredient(amount, unit, ingredient):
         add_button.click()
         print(f'Added {amount} * "{element_text}" of "{found_ingredient_name}"')
     except ElementClickInterceptedException:
+        amount = amount_el.get_attribute("value")
+        unit = unit_select_object.first_selected_option.text
         remove_cookie_banner()
         add_ingredient(amount, unit, ingredient)
 
@@ -203,7 +205,7 @@ def add_recipe(name, servings, ingredients):
        servings: int amount of servings in recipe
        ingredients: list of three-tuple (amount, unit, ingredient)
     '''
-    add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
+    add_recipe = WebDriverWait(driver, timeout=30).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
     add_recipe.click()
     change_meta_data(titel)
     try:
@@ -267,4 +269,4 @@ if(__name__ == "__main__"):
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
-    add_recipe(titel, servings, [ (2, 'cl', 'Olivenöl'), (2, "mittelgroß", "Apfel"), (3, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
+    add_recipe(titel, servings, [ (2, 'dl', 'MinusL, Milch, Proteingehalt, 0.9%'), (2, "mittelgroß", "Apfel"), (3, "TL", "Pfefferminz"), (100, "ml", "Milch"), (200, "ml", "Wasser")])
