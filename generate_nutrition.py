@@ -41,11 +41,15 @@ def login_to_cronometer(email_login, password_login):
     button.click()
     WebDriverWait(driver, timeout=10).until(lambda d: d.title != "Cronometer Login")
 
-def get_unit_multiplier(select_option, unit):
-    '''select_option: text of selection drop-down menu in cronometer (e.g. "1/4 tbsp - 0.5 g")
-    unit: unit to find in select_option in cronometer name (e.g. "tbsp")
+def adjust_amount_by_multiplier(amount, unit, select_text):
     '''
-    amount_unit = re.sub(f'[^0-9]*([0-9]+/)?([0-9]+)?\\s?{unit}.*', '\\1\\2', select_option)
+    returns adjusted amount for given option. Can detect fractionals
+    (e.g. adjust_amount_by_multiplier(3, 'tbsp', '1/4 tbsp - 0.5 g') returns 12
+    amount: amount of initial unit (e.g. 300 for 300 mL)
+    unit: base unit to match on cronometer.com such as "tbsp". NOT unit used in recipe
+    select_text: whole option displayed such as "1/4 tbsp - 0.5 g"
+    '''
+    amount_unit = re.sub(f'[^0-9]*([0-9]+/)?([0-9]+)?\\s?{unit}.*', '\\1\\2', select_text)
     mul = re.sub(f'(.*){unit}', '\\1', amount_unit)
     if not mul:
         mul = '1'
@@ -53,17 +57,10 @@ def get_unit_multiplier(select_option, unit):
         n = float( re.sub('([0-9])*/[0-9]*', '\\1', mul) )
         d = float( re.sub('([0-9])*/[0-9]*', '\\2', mul) )
         mul = n / d
-    return float(mul)
-
-def adjust_amount_by_multiplier(amount, unit, select_text):
-    '''returns adjusted amount for given option. Can detect fractionals
-    (e.g. adjust_amount_by_multiplier(3, 'tbsp', '1/4 tbsp - 0.5 g') returns 12
-    amount: amount of initial unit (e.g. 300 for 300 mL)
-    unit: base unit to match on cronometer.com such as "tbsp". NOT unit used in recipe
-    select_text: whole option displayed such as "1/4 tbsp - 0.5 g"'''
-    multiplier = get_unit_multiplier(select_text, unit)
-    if(multiplier):
-        amount /= multiplier
+    else:
+        mul = float(mul)
+    if(mul):
+        amount /= mul
     return amount
 
 def match_unit(select_list, amount, unit):
