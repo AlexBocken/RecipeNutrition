@@ -39,7 +39,7 @@ def login_to_cronometer(email_login, password_login):
     password_input.send_keys(password_login)
     button = driver.find_element(by=By.CSS_SELECTOR, value="button#login-button.submit--1.login-fields")
     button.click()
-    WebDriverWait(driver, timeout=10).until(lambda d: d.title != "Cronometer Login")
+    WebDriverWait(driver, timeout=60).until(lambda d: d.title != "Cronometer Login")
 
 def adjust_amount_by_multiplier(amount, unit, select_text):
     '''
@@ -134,33 +134,47 @@ def add_ingredient(amount, unit, ingredient):
     '''
     print(f'Trying to add {amount} {unit} of {ingredient}')
 
+    add_ingredient_xpath_expr = "//img[@title='Add Ingredient']"
     try:
         #go to ingredient popup
-        driver.find_element(By.XPATH, value="//img[@title='Add Ingredient']").click()
+        driver.find_element(By.XPATH, value=add_ingredient_xpath_expr).click()
     except ElementClickInterceptedException:
         remove_cookie_banner()
-        driver.find_element(By.XPATH, value="//img[@title='Add Ingredient']").click()
+        driver.find_element(By.XPATH, value=add_ingredient_xpath_expr).click()
+    # Weird exception... "Frame detached". Probably too fast for unreliable internet?
+    except WebDriverException:
+        sleep(2)
+        driver.find_element(By.XPATH, value=add_ingredient_xpath_expr).click()
 
     #search and wait for results to load
     search = driver.find_element(By.XPATH, value='//div[@class="popupContent"]//div/img/following-sibling::input')
     search.send_keys(ingredient)
     spinner_xpath_expr = '//div[@class="popupContent"]//img[@src="img/spin2.gif"]'
-    driver.find_element(By.XPATH, value='//div[@class="popupContent"]//button[text()="Search"]').click()
+    btn_search = driver.find_element(By.XPATH, value='//div[@class="popupContent"]//button[text()="Search"]')
+    btn_search.click()
+    first_result_xpath_expr = '//div[@class="popupContent"]//tr[@class="prettyTable-header"]/following-sibling::tr[1]/td[1]/div[@class="gwt-Label"]'
     try:
        WebDriverWait(driver, timeout=2).until(EC.visibility_of_element_located((By.XPATH, spinner_xpath_expr)))
-       WebDriverWait(driver, timeout=2).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
-    except (NoSuchElementException, TimeoutException) as e:
+       WebDriverWait(driver, timeout=30).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
+    except (NoSuchElementException, TimeoutException):
+        print("Waiting...")
         sleep(2) #could be cleaner, let's be real, doesn't have to be
         pass
-    #click on first result
-    first_result = driver.find_element(By.XPATH, value='//div[@class="popupContent"]//tr[@class="prettyTable-header"]/following-sibling::tr[1]/td[1]/div[@class="gwt-Label"]')
-    first_result.click()
+    try:
+        first_result = driver.find_element(By.XPATH, value=first_result_xpath_expr)
+        first_result.click()
+    except NoSuchElementException:
+        print("First result still not found. Your internet connection might be unstable. Consider trying at another time.")
+        btn_search.click()
+        sleep(10)
+        first_result = driver.find_element(By.XPATH, value=first_result_xpath_expr)
+        first_result.click()
     found_ingredient_name = first_result.text
     #wait for amount and unit input to appear
     unit_el_xpath_expr = '//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/select[@class="gwt-ListBox"]'
-    WebDriverWait(driver, timeout=10).until( EC.presence_of_element_located( (By.XPATH, unit_el_xpath_expr) ) )
+    WebDriverWait(driver, timeout=60).until( EC.presence_of_element_located( (By.XPATH, unit_el_xpath_expr) ) )
     unit_el = driver.find_element(By.XPATH, value=unit_el_xpath_expr)
-    WebDriverWait(driver, timeout=10).until( EC.element_to_be_clickable(unit_el) )
+    WebDriverWait(driver, timeout=60).until( EC.element_to_be_clickable(unit_el) )
     unit_select_object = Select(unit_el)
     options = unit_select_object.options
 
@@ -171,7 +185,7 @@ def add_ingredient(amount, unit, ingredient):
         print("Please press enter in this window when manual entry is done.", end='')
         input()
         unit = unit_select_object.first_selected_option.text
-        amount = amount_el.get_attribute("value")
+        amount = float(amount_el.get_attribute("value"))
         try:
             add_button.click()
             print(f'Added {amount} * "{unit}" of "{found_ingredient_name}"')
@@ -190,7 +204,7 @@ def add_ingredient(amount, unit, ingredient):
         add_button.click()
         print(f'Added {amount} * "{element_text}" of "{found_ingredient_name}"')
     except ElementClickInterceptedException:
-        amount = amount_el.get_attribute("value")
+        amount = float(amount_el.get_attribute("value"))
         unit = unit_select_object.first_selected_option.text
         remove_cookie_banner()
         add_ingredient(amount, unit, ingredient)
@@ -205,9 +219,9 @@ def add_recipe(name, servings, ingredients):
        servings: int amount of servings in recipe
        ingredients: list of three-tuple (amount, unit, ingredient)
     '''
-    add_recipe = WebDriverWait(driver, timeout=30).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
+    add_recipe = WebDriverWait(driver, timeout=60).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
     add_recipe.click()
-    change_meta_data(titel)
+    change_meta_data(name)
     try:
         change_servings(servings)
     except ElementClickInterceptedException:
@@ -222,11 +236,9 @@ def add_recipe(name, servings, ingredients):
 def change_meta_data(recipe_name):
     today = date.today()
     name_box = driver.find_element(By.XPATH, '//input[@title="New Recipe"]')
-    name_box.click()
     name_box.clear()
     name_box.send_keys(recipe_name)
     notes_box = driver.find_element(By.XPATH,'//textarea[@class="gwt-TextArea"]')
-    notes_box.click()
     notes_box.send_keys(f"Added on {today.strftime('%d.%m.%Y')}")
 
 def change_servings(servings):
@@ -270,3 +282,4 @@ if(__name__ == "__main__"):
 
     driver.get("https://cronometer.com/#foods")
     add_recipe(titel, servings, [ (2, 'dl', 'MinusL, Milch, Proteingehalt, 0.9%'), (2, "mittelgroß", "Apfel"), (3, "TL", "Pfefferminz"), (100, "ml", "Milch"), (200, "ml", "Wasser")])
+    #driver.quit()
