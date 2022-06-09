@@ -7,6 +7,7 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import *
 from time import sleep
+import re
 import os
 import subprocess
 from datetime import date
@@ -40,30 +41,92 @@ def login_to_cronometer(email_login, password_login):
     button.click()
     WebDriverWait(driver, timeout=10).until(lambda d: d.title != "Cronometer Login")
 
+def get_unit_multiplier(select_option, unit):
+    '''select_option: text of selection drop-down menu in cronometer (e.g. "1/4 tbsp - 0.5 g")
+    unit: unit to find in select_option in cronometer name (e.g. "tbsp")
+    '''
+    amount_unit = re.sub(f'[^0-9]*([0-9]+/)?([0-9]+)?\\s?{unit}.*', '\\1\\2', select_option)
+    mul = re.sub(f'(.*){unit}', '\\1', amount_unit)
+    if not mul:
+        mul = '1'
+    if '/' in mul:
+        n = float( re.sub('([0-9])*/[0-9]*', '\\1', mul) )
+        d = float( re.sub('([0-9])*/[0-9]*', '\\2', mul) )
+        mul = n / d
+    return float(mul)
+
+def adjust_amount_by_multiplier(amount, unit, select_text):
+    '''returns adjusted amount for given option. Can detect fractionals
+    (e.g. adjust_amount_by_multiplier(3, 'tbsp', '1/4 tbsp - 0.5 g') returns 12
+    amount: amount of initial unit (e.g. 300 for 300 mL)
+    unit: base unit to match on cronometer.com such as "tbsp". NOT unit used in recipe
+    select_text: whole option displayed such as "1/4 tbsp - 0.5 g"'''
+    multiplier = get_unit_multiplier(select_text, unit)
+    if(multiplier):
+        amount /= multiplier
+    return amount
+
 def match_unit(select_list, amount, unit):
-    if(unit == 'g'):
+    '''matches personal unit convention from recipe with cronometer options
+    if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
+    '''
+    if unit == 'g':
         for el in select_list:
             if el.text == 'g':
                 return amount, el.text
-    elif(unit == 'EL'):
+    elif( re.search('m(l|L)', unit) ):
         for el in select_list:
-            if 'tbsp' in el.text: #TODO: check whether fraction units of tbsp exist
+            if 'mL' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'mL', el.text)
                 return amount, el.text
-    elif(unit == 'TL'):
         for el in select_list:
-            if 'tsp' in el.text: #TODO: check whether fraction units of tsp exist
+            if( re.search('cup (-|—)', el.text) ):
+                one_cup_ml = 236.5882365
+                amount /= one_cup_ml
+                #TODO: probably is "half" or "quarter" cup, not "0.5", "0.25" cups
+                #TODO: maybe like tbsp '1/4', '1/2'?
+                amount = adjust_amount_by_multiplier(amount, 'cup', el.text)
                 return amount, el.text
+    elif( re.search( '(medium(-sized)?|mittel(gro(ss|ß))?)', unit) ):
+            for el in select_list:
+                if( re.search('medium (-|—)', el.text) ):
+                    return amount, el.text
+    elif( re.search( '(very small|sehr klein)', unit) ):
+            for el in select_list:
+                if( re.search('very small (-|—)', el.text) ):
+                    return amount, el.text
+    elif( re.search( '(small|klein)', unit) ):
+            for el in select_list:
+                if( re.search('small (-|—)', el.text) ):
+                    return amount, el.text
+    elif( re.search( '(large(-sized)?|gro(ss|ß))', unit) ):
+            for el in select_list:
+                if( re.search('large (-|—)', el.text) ):
+                    return amount, el.text
+    elif( re.search( '(EL|tbsp)', unit) ):
+        for el in select_list:
+            if( re.search('tbsp (-|—)', el.text) ):
+                amount = adjust_amount_by_multiplier(amount, 'tbsp', el.text)
+                return amount, el.text
+    elif( re.search( '(TL|tsp)', unit) ):
+        for el in select_list:
+            if( re.search('tsp (-|—)', el.text) ):
+                amount = adjust_amount_by_multiplier(amount, 'tsp', el.text)
+                return amount, el.text
+    elif (re.search('c(l|L)', unit)):
+        return match_unit(select_list, 10*amount, 'mL')
+    elif (re.search('d(l|L)', unit)):
+        return match_unit(select_list, 100*amount, 'mL')
+    # needs to be last non-generic match as it is quite generic to just look for 'l'
+    elif (re.search('(l|L)', unit)):
+        return match_unit(select_list, 1000*amount, 'mL')
     # generic catcher
-    else:
-        for el in select_list:
-            if el.text == unit:
-                return amount, el.text
-        for el in select_list:
-            #fuzzier, more unprecise, matching as an absolute fallback
-            if unit in el.text:
-                return amount, el.text
-        print("Found no matching unit, please select proper unit and amount manually")
-        return None, None
+    for el in select_list:
+        if el.text == unit:
+            amount = adjust_amount_by_multiplier(amount, unit, el.text)
+            return amount, el.text
+    print("Found no matching unit, please select proper unit and amount manually")
+    return None, None
 
 def add_ingredient(amount, unit, ingredient):
     '''Assumes that it starts on recipe page and adds one ingredient
@@ -207,4 +270,4 @@ if(__name__ == "__main__"):
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
-    add_recipe(titel, servings, [ (3, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
+    add_recipe(titel, servings, [ (2, 'cl', 'Olivenöl'), (2, "mittelgroß", "Apfel"), (3, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
