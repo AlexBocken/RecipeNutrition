@@ -7,10 +7,20 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import * # pyright: ignore
 from time import sleep
+import csv
 import re
 import os
 import subprocess
 from datetime import date
+
+def get_recipe_data(ingredients_file):
+    '''
+    This function takes in a tsv file of ingredients and returns the title, serving size and a list of ingredients for the recipe.
+    '''
+    with open(ingredients_file, newline='') as file:
+        content = csv.reader(file,delimiter="\t")
+        ingredients= [tuple(row) for row in content]
+    return ingredients[0][0], ingredients[0][1], ingredients[1:]
 
 
 def get_login_credentials():
@@ -67,6 +77,11 @@ def match_unit(select_list, amount, unit):
     '''matches personal unit convention from recipe with cronometer options
     if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
     '''
+    # generic catcher
+    for el in select_list:
+        if el.text == unit:
+            return amount, el.text
+    #specific catcher
     if unit == 'g':
         for el in select_list:
             if 'g' == el.text:
@@ -125,11 +140,6 @@ def match_unit(select_list, amount, unit):
     # needs to be last non-generic match as it is quite generic to just look for 'l'
     elif (re.search('(l|L)', unit)):
         return match_unit(select_list, 1000*amount, 'mL')
-    # generic catcher
-    for el in select_list:
-        if el.text == unit:
-            amount = adjust_amount_by_multiplier(amount, unit, el.text)
-            return amount, el.text
     print("Found no matching unit, please select proper unit and amount manually")
     return None, None
 
@@ -164,9 +174,10 @@ def add_ingredient(amount, unit, ingredient):
     try:
        WebDriverWait(driver, timeout=2).until(EC.visibility_of_element_located((By.XPATH, spinner_xpath_expr)))
        WebDriverWait(driver, timeout=30).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
-    except (NoSuchElementException, TimeoutException):
+    except NoSuchElementException:
         print("Waiting...")
         sleep(2) #could be cleaner, let's be real, doesn't have to be
+    except TimeoutException:
         pass
     try:
         first_result = driver.find_element(By.XPATH, value=first_result_xpath_expr)
@@ -236,12 +247,13 @@ def add_recipe(name, servings, ingredients):
         remove_cookie_banner()
         change_servings(servings)
     for amount, unit, ingredient in ingredients:
-        add_ingredient(amount, unit, ingredient)
+        add_ingredient(float(amount), unit, ingredient) # TODO: fix as soon as classes are implemented
     save_name = name.replace(" ", "_").lower()
     save_export_recipe(save_name)
 
 
 def change_meta_data(recipe_name):
+    '''Changes the name and date of the recipe'''
     today = date.today()
     name_box = driver.find_element(By.XPATH, '//input[@title="New Recipe"]')
     name_box.clear()
@@ -250,6 +262,7 @@ def change_meta_data(recipe_name):
     notes_box.send_keys(f"Added on {today.strftime('%d.%m.%Y')}")
 
 def change_servings(servings):
+    '''Changes servings of recipe to given amount'''
     servings_image = driver.find_element(By.XPATH, value="//img[@title='Add Measure']")
     servings_image.click()
     servings_field = driver.find_element(By.XPATH, value='//div[text()="Servings Per Recipe"]/parent::td/parent::tr/parent::tbody/tr[2]/td[3]')
@@ -257,10 +270,19 @@ def change_servings(servings):
     servings_field = driver.find_element(By.XPATH, value='//div[text()="Servings Per Recipe"]/parent::td/parent::tr/parent::tbody/tr[2]/td[3]/input')
     servings_field.send_keys(servings)
 
+
 def save_export_recipe(save_name):
+    '''Saves recipe and exports it to a file - also changes the exported reference amount to 1 serving'''
     save_button = driver.find_element(By.XPATH, value="//button[text()='Save Changes']")
     save_button.click()
-    sleep(1) # Wait for website to save the file
+    select_xpath = "//option[text()='g']/parent::select/parent::div/div[text()='Nutrients in: ']/following-sibling::select"
+    WebDriverWait(driver, timeout=60).until( EC.presence_of_element_located( (By.XPATH, select_xpath) ) )
+    select_element=driver.find_element(By.XPATH, select_xpath)
+    select_object=Select(select_element)
+    for option  in select_object.options:
+        if "Serving" in option.text:
+            select_object.select_by_visible_text(option.text)
+            break
     menu_button = driver.find_element(By.XPATH, value="//div[@class='GO-RHEKCA3']/img")
     menu_button.click()
     export_div = driver.find_element(By.XPATH, value="//div[contains(@class, 'gwt-Label') and text()='Export to CSV File...']")
@@ -276,8 +298,6 @@ if(__name__ == "__main__"):
     # INPUT FROM PARSER
     global save_location #TODO: should be cleaner if possible
     save_location = "/tmp/nutrition"
-    titel="Name des Rezeptes"
-    servings = 5
 
     chrome_options = Options()
     chrome_options.add_argument('--force-device-scale-factor=1.5')
@@ -289,5 +309,6 @@ if(__name__ == "__main__"):
     login_to_cronometer(email_login, password_login)
 
     driver.get("https://cronometer.com/#foods")
-    add_recipe(titel, servings, [ (2, 'dl', 'MinusL, Milch, Proteingehalt, 0.9%'), (2, "mittelgroß", "Apfel"), (3, "TL", "Pfefferminz"), (100, "ml", "Milch"), (200, "ml", "Wasser"), (1, 'kg', 'Mehl, weiss'), (1, 'dkg', 'Dm Bio, Hafer Joghurt, Natur')])
+    titel, servings, ingredients = get_recipe_data('test.csv')
+    add_recipe(titel, servings, ingredients)
 #    driver.quit()
