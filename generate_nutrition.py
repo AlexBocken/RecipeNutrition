@@ -10,7 +10,23 @@ from time import sleep
 import os
 import subprocess
 from datetime import date
+from typing import Union
+from dataclasses import dataclass, astuple
 
+@dataclass
+class Ingredient:
+    amount : Union[int, float]
+    unit : str
+    name: str
+
+@dataclass
+class Recipe:
+    name : str
+    servings : Union[int, float]
+    ingredients : list[Ingredient]
+
+    def add_ingredient(self, Ingredient):
+        self.ingredients.append(Ingredient)
 
 def get_login_credentials():
     user = os.getlogin()
@@ -89,7 +105,7 @@ def add_ingredient(amount, unit, ingredient):
     try:
        WebDriverWait(driver, timeout=2).until(EC.visibility_of_element_located((By.XPATH, spinner_xpath_expr)))
        WebDriverWait(driver, timeout=2).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
-    except (NoSuchElementException, TimeoutException) as e:
+    except (NoSuchElementException, TimeoutException):
         sleep(2) #could be cleaner, let's be real, doesn't have to be
         pass
     #click on first result
@@ -137,7 +153,7 @@ def remove_cookie_banner():
     print("Removing cookie banner...")
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
-def add_recipe(name, servings, ingredients):
+def add_recipe(recipe):
     '''Main loop for a single recipe. Adding name, servings, ingredients and export after it's done
        name: string of recipe name
        servings: int amount of servings in recipe
@@ -145,15 +161,15 @@ def add_recipe(name, servings, ingredients):
     '''
     add_recipe = WebDriverWait(driver, timeout=10).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
     add_recipe.click()
-    change_meta_data(titel)
+    change_meta_data(recipe.name)
     try:
-        change_servings(servings)
+        change_servings(recipe.servings)
     except ElementClickInterceptedException:
         remove_cookie_banner()
-        change_servings(servings)
-    for amount, unit, ingredient in ingredients:
-        add_ingredient(amount, unit, ingredient)
-    save_name = name.replace(" ", "_").lower()
+        change_servings(recipe.servings)
+    for i in recipe.ingredients:
+        add_ingredient(i.amount, i.unit, i.name)
+    save_name = recipe.name.replace(" ", "_").lower()
     save_export_recipe(save_name)
 
 
@@ -194,8 +210,6 @@ if(__name__ == "__main__"):
     # INPUT FROM PARSER
     global save_location #TODO: should be cleaner if possible
     save_location = "/tmp/nutrition"
-    titel="Name des Rezeptes"
-    servings = 5
 
     chrome_options = Options()
     chrome_options.add_argument('--force-device-scale-factor=1.5')
@@ -205,6 +219,12 @@ if(__name__ == "__main__"):
 
     driver = webdriver.Chrome(options=chrome_options)
     login_to_cronometer(email_login, password_login)
+    test_recipe = Recipe("Name des Rezeptes", 5, [])
+    test = Ingredient(3, "TL", "Pfefferminz")
+    test_recipe.add_ingredient(test)
+    test_recipe.add_ingredient(Ingredient(10, "ml", "Milch"))
+    test_recipe.add_ingredient(Ingredient(200, "ml", "Wasser"))
 
+    print(test_recipe)
     driver.get("https://cronometer.com/#foods")
-    add_recipe(titel, servings, [ (3, "TL", "Pfefferminz"), (10, "ml", "Milch"), (200, "ml", "Wasser") ])
+    add_recipe(test_recipe)
