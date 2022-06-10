@@ -227,7 +227,7 @@ def add_ingredient(i : Ingredient):
     i.amount, element_text = match_unit(options, i.amount, i.unit)
     amount_el = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/input[@class="input-enabled"]')
     add_button = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]//button[text()="Add"]')
-    if(i.amount == "manual"):
+    if(element_text == "manual"):
         print("Please press enter in this window when manual entry is done.", end='')
         input()
         try:
