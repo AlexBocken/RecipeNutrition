@@ -6,7 +6,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import * # pyright: ignore
-from selenium.webdriver.support.select import Select
 from time import sleep
 import csv
 import re
