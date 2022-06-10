@@ -1,6 +1,7 @@
 #!/bin/python3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support.select import Select
@@ -12,18 +13,42 @@ import re
 import os
 import subprocess
 from datetime import date
+from typing import Union
+from dataclasses import dataclass
 
-def get_recipe_data(ingredients_file):
+@dataclass
+class Ingredient:
+    amount : Union[int, float]
+    unit : str
+    name: str
+
+@dataclass
+class Recipe:
+    name : str
+    servings : Union[int, float]
+    ingredients : list[Ingredient]
+
+    def add_ingredient(self, Ingredient):
+        self.ingredients.append(Ingredient)
+
+def get_recipe_data(ingredients_file : str) -> Recipe:
     '''
-    This function takes in a tsv file of ingredients and returns the title, serving size and a list of ingredients for the recipe.
+    Reads given file path into Recipe object and returns this.
+    ingredients_file: path to tsv file of recipe of the following structure:
+            First line:{name of recipe}\t{servings}
+            Every other line:{amount}\t{unit}\t{ingredient name}
     '''
     with open(ingredients_file, newline='') as file:
         content = csv.reader(file,delimiter="\t")
         ingredients= [tuple(row) for row in content]
-    return ingredients[0][0], ingredients[0][1], ingredients[1:]
+    recipe = Recipe(name=ingredients[0][0], servings=float(ingredients[0][1]), ingredients=[])
+    for i in ingredients[1:]:
+        ingredient = Ingredient(float(i[0]), i[1], i[2])
+        recipe.add_ingredient(ingredient)
+    return recipe
 
 
-def get_login_credentials():
+def get_login_credentials() -> tuple[str, str]:
     user = os.getlogin()
     if ( user == 'alex' ):
         out = subprocess.check_output(['pass', 'show', 'Fitness/cronometer'])
@@ -37,11 +62,11 @@ def get_login_credentials():
     else:
         email_login = os.environ.get('RN_EMAIL')
         password_login = os.environ.get('RN_PW')
-        assert email_login and password_login, "please setup credential get method for this user or use env vars (RN_EMAIL & RN_PW)"
+    assert email_login and password_login, "please setup credential get method for this user or use env vars (RN_EMAIL & RN_PW)"
 
     return email_login, password_login
 
-def login_to_cronometer(email_login, password_login):
+def login_to_cronometer(email_login : str, password_login : str):
     driver.get("https://cronometer.com/login/")
     email_input = driver.find_element(By.CSS_SELECTOR, value="input#usernameBox.textbox--1.login-fields")
     password_input = driver.find_element(By.CSS_SELECTOR, value="input#password.textbox--1.login-fields")
@@ -51,7 +76,7 @@ def login_to_cronometer(email_login, password_login):
     button.click()
     WebDriverWait(driver, timeout=60).until(lambda d: d.title != "Cronometer Login")
 
-def adjust_amount_by_multiplier(amount, unit, select_text):
+def adjust_amount_by_multiplier(amount : float, unit : str, select_text : str) -> float:
     '''
     returns adjusted amount for given option. Can detect fractionals
     (e.g. adjust_amount_by_multiplier(3, 'tbsp', '1/4 tbsp - 0.5 g') returns 12
@@ -59,6 +84,7 @@ def adjust_amount_by_multiplier(amount, unit, select_text):
     unit: base unit to match on cronometer.com such as "tbsp". NOT unit used in recipe
     select_text: whole option displayed such as "1/4 tbsp - 0.5 g"
     '''
+    #TODO: check whether \\. should be added to \\2
     amount_unit = re.sub(f'[^0-9]*([0-9]+/)?([0-9]+)?\\s?{unit}.*', '\\1\\2', select_text)
     mul = re.sub(f'(.*){unit}', '\\1', amount_unit)
     if not mul:
@@ -73,10 +99,11 @@ def adjust_amount_by_multiplier(amount, unit, select_text):
         amount /= mul
     return amount
 
-def match_unit(select_list, amount, unit):
+def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tuple[float, str]:
     '''matches personal unit convention from recipe with cronometer options
     if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
     '''
+    # TODO: Blatt/Blätter/leaf/leaves, sprig/Bund -> fallback to leaf (idk, 20 leaves = 1 sprig?)
     # generic catcher
     for el in select_list:
         if el.text == unit:
@@ -141,16 +168,16 @@ def match_unit(select_list, amount, unit):
     elif (re.search('(l|L)', unit)):
         return match_unit(select_list, 1000*amount, 'mL')
     print("Found no matching unit, please select proper unit and amount manually")
-    return None, None
+    return 0, "manual"
 
-def add_ingredient(amount, unit, ingredient):
+def add_ingredient(i : Ingredient):
     '''Assumes that it starts on recipe page and adds one ingredient
     to the recipe
     amount: int/float with amount in later specified unit
     unit: unit of amount (e.g. "g" for grams)
     ingredient: string with name for ingredient
     '''
-    print(f'Trying to add {amount} {unit} of {ingredient}')
+    print(f'Trying to add {i.amount} {i.unit} of {i.name}')
 
     add_ingredient_xpath_expr = "//img[@title='Add Ingredient']"
     try:
@@ -166,7 +193,7 @@ def add_ingredient(amount, unit, ingredient):
 
     #search and wait for results to load
     search = driver.find_element(By.XPATH, value='//div[@class="popupContent"]//div/img/following-sibling::input')
-    search.send_keys(ingredient)
+    search.send_keys(i.name)
     spinner_xpath_expr = '//div[@class="popupContent"]//img[@src="img/spin2.gif"]'
     btn_search = driver.find_element(By.XPATH, value='//div[@class="popupContent"]//button[text()="Search"]')
     btn_search.click()
@@ -197,42 +224,42 @@ def add_ingredient(amount, unit, ingredient):
     unit_select_object = Select(unit_el)
     options = unit_select_object.options
 
-    amount, element_text = match_unit(options, amount,  unit)
+    i.amount, element_text = match_unit(options, i.amount, i.unit)
     amount_el = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]/input[@class="input-enabled"]')
     add_button = driver.find_element(By.XPATH, value='//div[text()="Serving:"]/following-sibling::div//div[@class="select-pretty"]//button[text()="Add"]')
-    if(amount is None):
+    if(element_text == "manual"):
         print("Please press enter in this window when manual entry is done.", end='')
         input()
         try:
-            amount = float(amount_el.get_attribute("value"))
-            unit = unit_select_object.first_selected_option.text
+            i.amount = float(amount_el.get_attribute("value"))
+            i.unit = unit_select_object.first_selected_option.text
             add_button.click()
-            print(f'Added {amount} * "{unit}" of "{found_ingredient_name}"')
+            print(f'Added {i.amount} * "{i.unit}" of "{found_ingredient_name}"')
         except ElementClickInterceptedException:
             remove_cookie_banner()
-            add_ingredient(amount, unit, ingredient)
+            add_ingredient(i)
         except StaleElementReferenceException:
             pass
         return
     else:
         unit_select_object.select_by_visible_text(element_text)
         amount_el.clear()
-        amount_el.send_keys(amount)
+        amount_el.send_keys(i.amount)
 
     try:
         add_button.click()
-        print(f'Added {amount} * "{element_text}" of "{found_ingredient_name}"')
+        print(f'Added {i.amount} * "{element_text}" of "{found_ingredient_name}"')
     except ElementClickInterceptedException:
-        amount = float(amount_el.get_attribute("value"))
-        unit = unit_select_object.first_selected_option.text
+        i.amount = float(amount_el.get_attribute("value"))
+        i.unit = unit_select_object.first_selected_option.text
         remove_cookie_banner()
-        add_ingredient(amount, unit, ingredient)
+        add_ingredient(i)
 
 def remove_cookie_banner():
     print("Removing cookie banner...")
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//button[@class="ncmp__btn"]'))).click()
 
-def add_recipe(name, servings, ingredients):
+def add_recipe(recipe : Recipe):
     '''Main loop for a single recipe. Adding name, servings, ingredients and export after it's done
        name: string of recipe name
        servings: int amount of servings in recipe
@@ -240,19 +267,19 @@ def add_recipe(name, servings, ingredients):
     '''
     add_recipe = WebDriverWait(driver, timeout=60).until(lambda d: d.find_element(By.XPATH, value="//button[text()='+ Add Recipe']"))
     add_recipe.click()
-    change_meta_data(name)
+    change_meta_data(recipe.name)
     try:
-        change_servings(servings)
+        change_servings(recipe.servings)
     except ElementClickInterceptedException:
         remove_cookie_banner()
-        change_servings(servings)
-    for amount, unit, ingredient in ingredients:
-        add_ingredient(float(amount), unit, ingredient) # TODO: fix as soon as classes are implemented
-    save_name = name.replace(" ", "_").lower()
+        change_servings(recipe.servings)
+    for i in recipe.ingredients:
+        add_ingredient(i)
+    save_name = recipe.name.replace(" ", "_").lower()
     save_export_recipe(save_name)
 
 
-def change_meta_data(recipe_name):
+def change_meta_data(recipe_name : str):
     '''Changes the name and date of the recipe'''
     today = date.today()
     name_box = driver.find_element(By.XPATH, '//input[@title="New Recipe"]')
@@ -261,7 +288,7 @@ def change_meta_data(recipe_name):
     notes_box = driver.find_element(By.XPATH,'//textarea[@class="gwt-TextArea"]')
     notes_box.send_keys(f"Added on {today.strftime('%d.%m.%Y')}")
 
-def change_servings(servings):
+def change_servings(servings : float):
     '''Changes servings of recipe to given amount'''
     servings_image = driver.find_element(By.XPATH, value="//img[@title='Add Measure']")
     servings_image.click()
@@ -271,7 +298,7 @@ def change_servings(servings):
     servings_field.send_keys(servings)
 
 
-def save_export_recipe(save_name):
+def save_export_recipe(save_name : str):
     '''Saves recipe and exports it to a file - also changes the exported reference amount to 1 serving'''
     save_button = driver.find_element(By.XPATH, value="//button[text()='Save Changes']")
     save_button.click()
@@ -308,7 +335,7 @@ if(__name__ == "__main__"):
     driver = webdriver.Chrome(options=chrome_options)
     login_to_cronometer(email_login, password_login)
 
+    test_recipe = get_recipe_data('test.csv')
+    print(test_recipe)
     driver.get("https://cronometer.com/#foods")
-    titel, servings, ingredients = get_recipe_data('test.csv')
-    add_recipe(titel, servings, ingredients)
-#    driver.quit()
+    add_recipe(test_recipe)
