@@ -7,10 +7,10 @@ A selenium project to automate nutrition gathering for personal recipes
 1. Include pass for auth - DONE
 2. Login to cronometer - DONE
 	-> fancy TODO: store cookies so that logins are not required
-3. Read recipe from files (TSV: Amount\tIngredient)
-4. Auto-Naviagte to recipe page
+3. Read recipe from files (TSV: Amount\tunit\tIngredient) - DONE
+4. Auto-Naviagte to recipe page - DONE
 5. create recipe
-  - Add ingredients for the selected recipe with amounts
+  - Add ingredients for the selected recipe with amounts - DONE
   - user verification : is that what you wanted
   - possibility to correct
  4. export per serving as csv
