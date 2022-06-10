@@ -103,7 +103,6 @@ def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tu
     '''matches personal unit convention from recipe with cronometer options
     if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
     '''
-    # TODO: Blatt/Blätter/leaf/leaves, sprig/Bund -> fallback to leaf (idk, 20 leaves = 1 sprig?)
     # generic catcher
     for el in select_list:
         if el.text == unit:
@@ -117,10 +116,38 @@ def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tu
             if 'g' in el.text:
                 amount = adjust_amount_by_multiplier(amount, 'g', el.text)
                 return amount, el.text
-    if unit == 'kg':
+    elif unit == 'kg':
         return match_unit(select_list, 1000*amount, 'g')
-    if unit == 'dkg':
+    elif unit == 'dkg':
         return match_unit(select_list, 100*amount, 'g')
+    elif( unit in ('Blatt', 'Blätter', 'leaf', 'leaves') ):
+        for el in select_list:
+            if 'leaf' in el.text:
+                return amount, el.text
+        for el in select_list:
+            if 'leaves' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'leaves', el.text)
+                return amount, el.text
+        else:
+            # fallback to 1 leaf ~ 0.1g
+            return match_unit(select_list, 0.1*amount, 'g')
+    elif( unit in ('dash', 'Prise', 'Messerspitze') ):
+        for el in select_list:
+            if 'dashes' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'dashes', el.text)
+                return amount, el.text
+        for el in select_list:
+            if 'dash' in el.text:
+                return amount, el.text
+    elif( unit in ('sprig', 'Bund') ):
+        for el in select_list:
+            if 'sprigs' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'sprigs', el.text)
+                return amount, el.text
+            if 'sprig' in el.text:
+                return amount, el.text
+        # fallback to 1 sprig ~ 20 leaves
+        return match_unit(select_list, 20*amount, 'leaf')
     elif( re.search('m(l|L)', unit) ):
         for el in select_list:
             if (unit_match := re.search('m(l|L)', el.text) ):
@@ -134,19 +161,19 @@ def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tu
                 #TODO: maybe like tbsp '1/4', '1/2'?
                 amount = adjust_amount_by_multiplier(amount, 'cup', el.text)
                 return amount, el.text
-    elif( re.search( '(medium(-sized)?|mittel(gro(ss|ß))?)', unit) ):
+    elif( re.search( '(medium(-sized)?|mittel(gro(ss|ß)e?)?)', unit) ):
             for el in select_list:
                 if( re.search('medium (-|—)', el.text) ):
                     return amount, el.text
-    elif( re.search( '(very small|sehr klein)', unit) ):
+    elif( re.search( '(very small|sehr kleine?)', unit) ):
             for el in select_list:
                 if( re.search('very small (-|—)', el.text) ):
                     return amount, el.text
-    elif( re.search( '(small|klein)', unit) ):
+    elif( re.search( '(small|kleine?)', unit) ):
             for el in select_list:
                 if( re.search('small (-|—)', el.text) ):
                     return amount, el.text
-    elif( re.search( '(large(-sized)?|gro(ss|ß))', unit) ):
+    elif( re.search( '(large(-sized)?|gro(ss|ß)e?)', unit) ):
             for el in select_list:
                 if( re.search('large (-|—)', el.text) ):
                     return amount, el.text
@@ -336,6 +363,8 @@ if(__name__ == "__main__"):
     login_to_cronometer(email_login, password_login)
 
     test_recipe = get_recipe_data('test.csv')
-    print(test_recipe)
+    test_recipe_2 = Recipe( "Test Bund", 1, [])
+    test_recipe_2.add_ingredient(Ingredient(2, 'leaf', "Pfefferminze, frisch"))
+    test_recipe_2.add_ingredient(Ingredient(2, 'Bund', "Pfefferminze, frisch"))
     driver.get("https://cronometer.com/#foods")
     add_recipe(test_recipe)
