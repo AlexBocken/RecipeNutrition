@@ -192,9 +192,9 @@ def add_ingredient(amount, unit, ingredient):
     if(amount is None):
         print("Please press enter in this window when manual entry is done.", end='')
         input()
-        unit = unit_select_object.first_selected_option.text
-        amount = float(amount_el.get_attribute("value"))
         try:
+            amount = float(amount_el.get_attribute("value"))
+            unit = unit_select_object.first_selected_option.text
             add_button.click()
             print(f'Added {amount} * "{unit}" of "{found_ingredient_name}"')
         except ElementClickInterceptedException:
