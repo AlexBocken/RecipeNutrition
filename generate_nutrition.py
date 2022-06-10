@@ -77,6 +77,12 @@ def match_unit(select_list, amount, unit):
     '''matches personal unit convention from recipe with cronometer options
     if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
     '''
+    # generic catcher
+    for el in select_list:
+        if el.text == unit:
+            amount = adjust_amount_by_multiplier(amount, unit, el.text)
+            return amount, el.text
+    #specific catcher
     if unit == 'g':
         for el in select_list:
             if 'g' == el.text:
@@ -135,11 +141,6 @@ def match_unit(select_list, amount, unit):
     # needs to be last non-generic match as it is quite generic to just look for 'l'
     elif (re.search('(l|L)', unit)):
         return match_unit(select_list, 1000*amount, 'mL')
-    # generic catcher
-    for el in select_list:
-        if el.text == unit:
-            amount = adjust_amount_by_multiplier(amount, unit, el.text)
-            return amount, el.text
     print("Found no matching unit, please select proper unit and amount manually")
     return None, None
 
@@ -174,9 +175,10 @@ def add_ingredient(amount, unit, ingredient):
     try:
        WebDriverWait(driver, timeout=2).until(EC.visibility_of_element_located((By.XPATH, spinner_xpath_expr)))
        WebDriverWait(driver, timeout=30).until(EC.invisibility_of_element_located((By.XPATH, spinner_xpath_expr)))
-    except (NoSuchElementException, TimeoutException):
+    except NoSuchElementException:
         print("Waiting...")
         sleep(2) #could be cleaner, let's be real, doesn't have to be
+    except TimeoutException:
         pass
     try:
         first_result = driver.find_element(By.XPATH, value=first_result_xpath_expr)
@@ -246,7 +248,7 @@ def add_recipe(name, servings, ingredients):
         remove_cookie_banner()
         change_servings(servings)
     for amount, unit, ingredient in ingredients:
-        add_ingredient(float(amount), unit, ingredient)
+        add_ingredient(float(amount), unit, ingredient) # TODO: fix as soon as classes are implemented
     save_name = name.replace(" ", "_").lower()
     save_export_recipe(save_name)
 
@@ -274,13 +276,14 @@ def save_export_recipe(save_name):
     '''Saves recipe and exports it to a file - also changes the exported reference amount to 1 serving'''
     save_button = driver.find_element(By.XPATH, value="//button[text()='Save Changes']")
     save_button.click()
-    sleep(1) # Wait for website to save the file
-    select_xpath='//div[text()="Nutrients in: "]/following-sibling::select'; # Select export reference amount to be 1 serving
+    select_xpath = "//option[text()='g']/parent::select/parent::div/div[text()='Nutrients in: ']/following-sibling::select"
+    WebDriverWait(driver, timeout=60).until( EC.presence_of_element_located( (By.XPATH, select_xpath) ) )
     select_element=driver.find_element(By.XPATH, select_xpath)
     select_object=Select(select_element)
-    select_element.click()
-    select_object.select_by_index(1)
-    sleep(1) # Wait for website to change to 1 serving
+    for option  in select_object.options:
+        if "Serving" in option.text:
+            select_object.select_by_visible_text(option.text)
+            break
     menu_button = driver.find_element(By.XPATH, value="//div[@class='GO-RHEKCA3']/img")
     menu_button.click()
     export_div = driver.find_element(By.XPATH, value="//div[contains(@class, 'gwt-Label') and text()='Export to CSV File...']")
