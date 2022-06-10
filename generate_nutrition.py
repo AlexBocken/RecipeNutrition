@@ -80,7 +80,6 @@ def match_unit(select_list, amount, unit):
     # generic catcher
     for el in select_list:
         if el.text == unit:
-            amount = adjust_amount_by_multiplier(amount, unit, el.text)
             return amount, el.text
     #specific catcher
     if unit == 'g':
