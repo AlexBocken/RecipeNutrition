@@ -1,0 +1,84 @@
+:root{
+	--nord0: #2E3440;
+	--nord1: #3B4252;
+	--nord2: #434C5E;
+	--nord3: #4C566A;
+	--nord4: #D8DEE9;
+	--nord5: #E5E9F0;
+	--nord6: #ECEFF4;
+	--nord7: #8FBCBB;
+	--nord8: #88C0D0;
+	--nord9: #81A1C1;
+	--nord10: #5E81AC;
+	--nord11: #BF616A;
+	--nord12: #D08770;
+	--nord13: #EBCB8B;
+	--nord14: #A3BE8C;
+	--nord15: #B48EAD;
+}
+body {
+	box-sizing: border-box;
+        color: var(--nord6);
+        background: var(--nord0);
+        max-width: 700px;
+	padding: 20px;
+        margin-left: auto;
+        margin-right: auto;
+	hyphens: auto;
+	font-size: 1.1rem;
+	line-height: 1.4;
+}
+.main{
+	margin-inline: auto;
+}
+.container{
+	font-size: calc(0.5rem + 2vw);
+	max-width: 500px;
+	display: flex;
+	flex-direction: column;
+}
+.nutrient{
+	border-top: 0.15em dotted var(--nord11);
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+.nutrient > .name{
+	word-break: break-all; /*TODO: rm and fix qutebrowser*/
+	flex: 1 0 0;
+}
+.nutrient > .numeric{
+	margin-inline: calc(2vw + 0.5em);
+	margin-left: 0.5em;
+	flex-grow: 0;
+	flex-shrink: 0;
+}
+/*.nutrient > span:first-of-type{*/
+.numeric + .numeric{
+	margin-inline: calc(1vw + 0.25em);
+}
+.nutrient > :last-child{
+	margin-inline-end: 0;
+	flex-basis: 2em;
+	text-align: right;
+}
+.hide{
+	opacity:0;
+}
+.container > .container > div:nth-child(n+2){
+	border-top: 0.15em dotted var(--nord10);
+	padding-left: min(2em, 7%);
+}
+.container__vitamins{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	background: green;
+}
+.container__vitamins > *{
+	flex-grow: 1;
+	flex-shrink: 0;
+	background: red;
+}
