@@ -13,19 +13,18 @@ import re
 import os
 import subprocess
 from datetime import date
-from typing import Union
 from dataclasses import dataclass
 
 @dataclass
 class Ingredient:
-    amount : Union[int, float]
+    amount : int | float
     unit : str
     name: str
 
 @dataclass
 class Recipe:
     name : str
-    servings : Union[int, float]
+    servings : int | float
     ingredients : list[Ingredient]
 
     def add_ingredient(self, Ingredient):
@@ -76,7 +75,7 @@ def login_to_cronometer(email_login : str, password_login : str):
     button.click()
     WebDriverWait(driver, timeout=60).until(lambda d: d.title != "Cronometer Login")
 
-def adjust_amount_by_multiplier(amount : float, unit : str, select_text : str) -> float:
+def adjust_amount_by_multiplier(amount : float, unit : str, select_text : str) -> int | float:
     '''
     returns adjusted amount for given option. Can detect fractionals
     (e.g. adjust_amount_by_multiplier(3, 'tbsp', '1/4 tbsp - 0.5 g') returns 12
@@ -99,7 +98,7 @@ def adjust_amount_by_multiplier(amount : float, unit : str, select_text : str) -
         amount /= mul
     return amount
 
-def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tuple[float, str]:
+def match_unit(select_list : list[WebElement], amount : int | float, unit : str) -> tuple[int | float, str]:
     '''matches personal unit convention from recipe with cronometer options
     if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
     '''
