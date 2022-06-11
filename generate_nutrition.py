@@ -31,6 +31,14 @@ class Recipe:
     def add_ingredient(self, Ingredient):
         self.ingredients.append(Ingredient)
 
+def get_daily_dose(dose_file):
+    with open('RI.csv', mode='r') as inp:
+        reader = csv.reader(inp, delimiter='\t')
+        dict_from_csv = {rows[0]:(rows[1],rows[2]) for rows in reader}
+    return dict_from_csv
+
+
+
 def get_recipe_data(ingredients_file : str) -> Recipe:
     '''
     Reads given file path into Recipe object and returns this.
@@ -339,3 +347,5 @@ if(__name__ == "__main__"):
     print(test_recipe)
     driver.get("https://cronometer.com/#foods")
     add_recipe(test_recipe)
+
+    print(get_daily_dose('RI.csv'))
