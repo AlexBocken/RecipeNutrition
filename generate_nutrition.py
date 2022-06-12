@@ -14,25 +14,22 @@ import re
 import os
 import subprocess
 from datetime import date
-from typing import Union
 from dataclasses import dataclass
 
 @dataclass
 class Ingredient:
-    amount : Union[int, float]
+    amount : int | float
     unit : str
     name: str
 
 @dataclass
 class Recipe:
     name : str
-    servings : Union[int, float]
+    servings : int | float
     ingredients : list[Ingredient]
 
     def add_ingredient(self, Ingredient):
         self.ingredients.append(Ingredient)
-
-
 
 def get_recipe_data(ingredients_file : str) -> Recipe:
     '''
@@ -79,7 +76,7 @@ def login_to_cronometer(email_login : str, password_login : str):
     button.click()
     WebDriverWait(driver, timeout=60).until(lambda d: d.title != "Cronometer Login")
 
-def adjust_amount_by_multiplier(amount : float, unit : str, select_text : str) -> float:
+def adjust_amount_by_multiplier(amount : float, unit : str, select_text : str) -> int | float:
     '''
     returns adjusted amount for given option. Can detect fractionals
     (e.g. adjust_amount_by_multiplier(3, 'tbsp', '1/4 tbsp - 0.5 g') returns 12
@@ -102,7 +99,7 @@ def adjust_amount_by_multiplier(amount : float, unit : str, select_text : str) -
         amount /= mul
     return amount
 
-def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tuple[float, str]:
+def match_unit(select_list : list[WebElement], amount : int | float, unit : str) -> tuple[int | float, str]:
     '''matches personal unit convention from recipe with cronometer options
     if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
     '''
@@ -120,10 +117,38 @@ def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tu
             if 'g' in el.text:
                 amount = adjust_amount_by_multiplier(amount, 'g', el.text)
                 return amount, el.text
-    if unit == 'kg':
+    elif unit == 'kg':
         return match_unit(select_list, 1000*amount, 'g')
-    if unit == 'dkg':
+    elif unit == 'dkg':
         return match_unit(select_list, 100*amount, 'g')
+    elif( unit in ('Blatt', 'Blätter', 'leaf', 'leaves') ):
+        for el in select_list:
+            if 'leaf' in el.text:
+                return amount, el.text
+        for el in select_list:
+            if 'leaves' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'leaves', el.text)
+                return amount, el.text
+        else:
+            # fallback to 1 leaf ~ 0.1g
+            return match_unit(select_list, 0.1*amount, 'g')
+    elif( unit in ('dash', 'Prise', 'Messerspitze') ):
+        for el in select_list:
+            if 'dashes' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'dashes', el.text)
+                return amount, el.text
+        for el in select_list:
+            if 'dash' in el.text:
+                return amount, el.text
+    elif( unit in ('sprig', 'Bund') ):
+        for el in select_list:
+            if 'sprigs' in el.text:
+                amount = adjust_amount_by_multiplier(amount, 'sprigs', el.text)
+                return amount, el.text
+            if 'sprig' in el.text:
+                return amount, el.text
+        # fallback to 1 sprig ~ 20 leaves
+        return match_unit(select_list, 20*amount, 'leaf')
     elif( re.search('m(l|L)', unit) ):
         for el in select_list:
             if (unit_match := re.search('m(l|L)', el.text) ):
@@ -137,19 +162,19 @@ def match_unit(select_list : list[WebElement], amount : float, unit : str) -> tu
                 #TODO: maybe like tbsp '1/4', '1/2'?
                 amount = adjust_amount_by_multiplier(amount, 'cup', el.text)
                 return amount, el.text
-    elif( re.search( '(medium(-sized)?|mittel(gro(ss|ß))?)', unit) ):
+    elif( re.search( '(medium(-sized)?|mittel(gro(ss|ß)e?)?)', unit) ):
             for el in select_list:
                 if( re.search('medium (-|—)', el.text) ):
                     return amount, el.text
-    elif( re.search( '(very small|sehr klein)', unit) ):
+    elif( re.search( '(very small|sehr kleine?)', unit) ):
             for el in select_list:
                 if( re.search('very small (-|—)', el.text) ):
                     return amount, el.text
-    elif( re.search( '(small|klein)', unit) ):
+    elif( re.search( '(small|kleine?)', unit) ):
             for el in select_list:
                 if( re.search('small (-|—)', el.text) ):
                     return amount, el.text
-    elif( re.search( '(large(-sized)?|gro(ss|ß))', unit) ):
+    elif( re.search( '(large(-sized)?|gro(ss|ß)e?)', unit) ):
             for el in select_list:
                 if( re.search('large (-|—)', el.text) ):
                     return amount, el.text
@@ -364,7 +389,7 @@ if(__name__ == "__main__"):
     global save_location #TODO: should be cleaner if possible
     save_location = "/tmp/nutrition"
     recipe_csv = "test.csv"
-    reference_csv = "RI_3.csv"
+    reference_csv = "RI_3.csv" # Should be later implemented in to the add_recipe function? 
 
 
     chrome_options = Options()
@@ -380,4 +405,4 @@ if(__name__ == "__main__"):
     driver.get("https://cronometer.com/#foods")
     add_recipe(test_recipe)
 
-    #merge_export_daily_dose('RI_3.csv', 'destination.csv', 'destination_merged.csv')
+
