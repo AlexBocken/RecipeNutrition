@@ -8,6 +8,7 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import * # pyright: ignore
 from time import sleep
+from csv import *
 import csv
 import re
 import os
@@ -102,6 +103,7 @@ def match_unit(select_list : list[WebElement], amount : int | float, unit : str)
     '''matches personal unit convention from recipe with cronometer options
     if necessary, amount get's adjusted to compensate for multipliers found in cronometer unit
     '''
+    # TODO: Blatt/Blätter/leaf/leaves, sprig/Bund -> fallback to leaf (idk, 20 leaves = 1 sprig?)
     # generic catcher
     for el in select_list:
         if el.text == unit:
@@ -341,8 +343,43 @@ def save_export_recipe(save_name : str):
     export_div = driver.find_element(By.XPATH, value="//div[contains(@class, 'gwt-Label') and text()='Export to CSV File...']")
     export_div.click()
     sleep(2) # wait for file to be downloaded TODO: cleanup
-    os.system(f"mv {save_location}/food.csv {save_location}/{save_name}.csv") # move file to be named after recipe
+    final_save = save_location+'/'+save_name+'.csv'
+    with open(save_location+"/food.csv") as f, open(final_save, 'w') as fw:
+        writer(fw, delimiter='\t').writerows(zip(*reader(f, delimiter=',')))
+    os.system(f"rm {save_location}/food.csv") # remove the downloaded file
+    merge_export_daily_dose(reference_csv, final_save, final_save)
 
+def get_daily_dose(dose_file):
+    with open(dose_file, mode='r') as inp:
+        reader = csv.reader(inp, delimiter='\t')
+        dict_from_csv = {rows[0]:rows[1] for rows in reader}
+    return dict_from_csv
+
+def merge_export_daily_dose(daily_dose_file, nutrients_file, export_file):
+    new_dict = {}
+    daily_dose = get_daily_dose(daily_dose_file)
+    with open(nutrients_file, mode='r') as inp:
+        reader = csv.reader(inp, delimiter='\t')
+        nutrients = {rows[0]:rows[1] for rows in reader}
+    for key in nutrients:
+        if key in daily_dose:
+            new_dict[key] = (nutrients[key], daily_dose[key])
+        else:
+            new_dict[key] = (nutrients[key], 'N/A')
+    with open(export_file, mode='w') as out:
+        writer = csv.writer(out, delimiter='\t')
+        for key, value in new_dict.items():
+            if(key == 'Food ID' or key == 'Food Name' or key=='Comments' or key == 'Amount'): # first lines with meta data
+                writer.writerow([key, value[0], " " ])
+            else: # nutrition data
+                reference = value[1]
+                intake = value[0]
+                unit = re.sub("\\)","", re.sub("\\(","", re.search("\\(([^\\(]*)\\)$", key).group(0))) #TODO: fix if None
+                nutrient = re.sub("\\(([^\\(]*)\\)$","", key)
+                if reference == 'N/A':
+                    writer.writerow([nutrient, str(intake)+" "+str(unit), " "])
+                else:
+                    writer.writerow([nutrient, str(intake)+" "+str(unit), str(round(100*float(intake)/float(reference),1))+"%"])
 
 
 if(__name__ == "__main__"):
@@ -351,6 +388,9 @@ if(__name__ == "__main__"):
     # INPUT FROM PARSER
     global save_location #TODO: should be cleaner if possible
     save_location = "/tmp/nutrition"
+    recipe_csv = "test.csv"
+    reference_csv = "RI.csv" # Should be later implemented in to the add_recipe function?
+
 
     chrome_options = Options()
     chrome_options.add_argument('--force-device-scale-factor=1.5')
@@ -361,9 +401,6 @@ if(__name__ == "__main__"):
     driver = webdriver.Chrome(options=chrome_options)
     login_to_cronometer(email_login, password_login)
 
-    test_recipe = get_recipe_data('test.csv')
-    test_recipe_2 = Recipe( "Test Bund", 1, [])
-    test_recipe_2.add_ingredient(Ingredient(2, 'leaf', "Pfefferminze, frisch"))
-    test_recipe_2.add_ingredient(Ingredient(2, 'Bund', "Pfefferminze, frisch"))
+    test_recipe = get_recipe_data(recipe_csv)
     driver.get("https://cronometer.com/#foods")
     add_recipe(test_recipe)
