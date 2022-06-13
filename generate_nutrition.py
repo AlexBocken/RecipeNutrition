@@ -374,7 +374,7 @@ def merge_export_daily_dose(daily_dose_file, nutrients_file, export_file):
             else: # nutrition data
                 reference = value[1]
                 intake = value[0]
-                unit = re.sub("\\)","", re.sub("\\(","", re.search("\\(([^\\(]*)\\)$", key).group(0)))
+                unit = re.sub("\\)","", re.sub("\\(","", re.search("\\(([^\\(]*)\\)$", key).group(0))) #TODO: fix if None
                 nutrient = re.sub("\\(([^\\(]*)\\)$","", key)
                 if reference == 'N/A':
                     writer.writerow([nutrient, str(intake)+" "+str(unit), " "])
@@ -389,7 +389,7 @@ if(__name__ == "__main__"):
     global save_location #TODO: should be cleaner if possible
     save_location = "/tmp/nutrition"
     recipe_csv = "test.csv"
-    reference_csv = "RI_3.csv" # Should be later implemented in to the add_recipe function? 
+    reference_csv = "RI.csv" # Should be later implemented in to the add_recipe function?
 
 
     chrome_options = Options()
@@ -404,5 +404,3 @@ if(__name__ == "__main__"):
     test_recipe = get_recipe_data(recipe_csv)
     driver.get("https://cronometer.com/#foods")
     add_recipe(test_recipe)
-
-
