@@ -20,7 +20,6 @@ body {
 	box-sizing: border-box;
         color: var(--nord6);
         background: var(--nord0);
-        max-width: 700px;
 	padding: 20px;
         margin-left: auto;
         margin-right: auto;
@@ -33,7 +32,6 @@ body {
 }
 .container{
 	font-size: calc(0.5rem + 2vw);
-	max-width: 500px;
 	display: flex;
 	flex-direction: column;
 }
@@ -75,10 +73,69 @@ body {
 	flex-direction: row;
 	flex-wrap: wrap;
 	justify-content: space-between;
-	background: green;
 }
-.container__vitamins > *{
-	flex-grow: 1;
-	flex-shrink: 0;
-	background: red;
+.container__vitamins > .vitamin{
+	flex: 0 0 33%;
+	font-size: 2.75vw;
+}
+span.name::after {
+	content: ":";
+}
+span.numeric:last-child::before{
+	content: "(";
+}
+span.numeric:last-child::after{
+	content: ")";
+}
+span.numeric:last-child{
+	margin-inline: 0;
+}
+.main>header{
+	font-weight: bold;
+}
+.container__vitamins > header{
+	width: 100%;
+	border-bottom: 0.15em dotted var(--nord10);
+	border-top: 0.15em dotted var(--nord11);
+}
+.container__vitamins{
+	border-bottom: 0.15em dotted var(--nord10);
+}
+.energy{
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+.energy .name{
+	word-break:keep-all;
+	flex-wrap: nowrap;
+}
+@media only screen and (max-width: 370px){
+	.container__vitamins > .vitamin{
+		flex: 0 0 50%;
+		font-size: 4vw;
+	}
+
+}
+@media only screen and (max-width: 200px){
+	.container__vitamins > .vitamin{
+		font-size: 7vw;
+	}
+	.container__vitamins{
+		flex-direction: column;
+		flex-wrap: nowrap;
+	}
+	.vitamin{
+		display: flex;
+		justify-content: space-between;
+	}
+	.vitamin > *{
+		flex-basis: 0px;
+	}
+	.vitamin .name{
+		flex-grow: 2;
+	}
+	.vitamin .numeric{
+		text-align: right;
+		flex-grow: 1;
+	}
 }
