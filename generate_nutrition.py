@@ -20,6 +20,8 @@ import sys
 
 import parser_Till as pT
 
+
+
 @dataclass
 class Ingredient:
     amount : int | float
@@ -414,10 +416,10 @@ if(__name__ == "__main__"):
     save_location = os.getcwd()
 
     name = sys.argv[1]
-
     recipe_csv = name+".csv"
 
     pT.InputTill(name+'.md',recipe_csv)
+
     # Set for the reference amount - change here for different reference amounts TODO: Maybe as input parameters by the parser calling this script?
     reference_csv = "RI.csv"
 
