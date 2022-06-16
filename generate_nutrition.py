@@ -16,6 +16,11 @@ import subprocess
 from datetime import date
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
+import sys
+
+import parser_Till as pT
+
+
 
 @dataclass
 class Ingredient:
@@ -408,8 +413,12 @@ if(__name__ == "__main__"):
 
     #INPUT FROM PARSER
     global save_location #TODO: should be cleaner if possible
-    save_location = "/tmp/nutrition"
-    recipe_csv = "test.csv"
+    save_location = os.getcwd()
+
+    name = sys.argv[1]
+    recipe_csv = name+".csv"
+
+    pT.InputTill(name+'.md',recipe_csv)
 
     # Set for the reference amount - change here for different reference amounts TODO: Maybe as input parameters by the parser calling this script?
     reference_csv = "RI.csv"
