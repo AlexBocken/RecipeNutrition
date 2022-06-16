@@ -15,6 +15,7 @@ import os
 import subprocess
 from datetime import date
 from dataclasses import dataclass
+from bs4 import BeautifulSoup
 
 @dataclass
 class Ingredient:
@@ -307,6 +308,7 @@ def add_recipe(recipe : Recipe):
     save_export_recipe(save_name)
 
 
+
 def change_meta_data(recipe_name : str):
     '''Changes the name and date of the recipe'''
     today = date.today()
@@ -348,6 +350,7 @@ def save_export_recipe(save_name : str):
         writer(fw, delimiter='\t').writerows(zip(*reader(f, delimiter=',')))
     os.system(f"rm {save_location}/food.csv") # remove the downloaded file
     merge_export_daily_dose(reference_csv, final_save, final_save)
+    render_html(final_save,template_html, save_location+'/'+save_name+'.html')
 
 def get_daily_dose(dose_file):
     with open(dose_file, mode='r') as inp:
@@ -381,15 +384,38 @@ def merge_export_daily_dose(daily_dose_file, nutrients_file, export_file):
                 else:
                     writer.writerow([nutrient, str(intake)+" "+str(unit), str(round(100*float(intake)/float(reference),1))+"%"])
 
+def render_html(cronometer_output_csv, html_template, html_output):
+
+    with open(html_template, 'r') as file:
+        data = file.read()
+        BCAA = 0
+        with open(cronometer_output_csv, mode='r') as inp:
+            reader = csv.reader(inp, delimiter='\t')
+            for rows in reader:
+                Nutrients = rows[0].replace(" ","")
+                if Nutrients == "Leucine" or Nutrients == "Isoleucine" or Nutrients == "Valine":
+                    BCAA += float(rows[1].replace(" g",""))
+                data = data.replace("{{"+Nutrients+"}}", rows[1])
+                if len(rows)>1:
+                    data = data.replace("{{"+Nutrients+"_ri}}", rows[2])
+        data = data.replace("{{"+"BCAA"+"}}", str(round(BCAA,2))+" g")
+        data = data.replace("{{BCAA_ri}}", " ")
+    with open(html_output, 'w') as file:
+        file.write(data)
 
 if(__name__ == "__main__"):
     email_login, password_login = get_login_credentials()
 
-    # INPUT FROM PARSER
+    #INPUT FROM PARSER
     global save_location #TODO: should be cleaner if possible
     save_location = "/tmp/nutrition"
     recipe_csv = "test.csv"
-    reference_csv = "RI.csv" # Should be later implemented in to the add_recipe function?
+
+    # Set for the reference amount - change here for different reference amounts TODO: Maybe as input parameters by the parser calling this script?
+    reference_csv = "RI.csv"
+
+    # Set for the html export - change for different template TODO: Maybe as input parameters by the parser calling this script?
+    template_html = "nutrition.html"
 
 
     chrome_options = Options()
@@ -404,3 +430,4 @@ if(__name__ == "__main__"):
     test_recipe = get_recipe_data(recipe_csv)
     driver.get("https://cronometer.com/#foods")
     add_recipe(test_recipe)
+    #TODO: Figure out the best naming here

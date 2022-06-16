@@ -1,0 +1,141 @@
+:root{
+	--nord0: #2E3440;
+	--nord1: #3B4252;
+	--nord2: #434C5E;
+	--nord3: #4C566A;
+	--nord4: #D8DEE9;
+	--nord5: #E5E9F0;
+	--nord6: #ECEFF4;
+	--nord7: #8FBCBB;
+	--nord8: #88C0D0;
+	--nord9: #81A1C1;
+	--nord10: #5E81AC;
+	--nord11: #BF616A;
+	--nord12: #D08770;
+	--nord13: #EBCB8B;
+	--nord14: #A3BE8C;
+	--nord15: #B48EAD;
+}
+body {
+	box-sizing: border-box;
+        color: var(--nord6);
+        background: var(--nord0);
+	padding: 20px;
+        margin-left: auto;
+        margin-right: auto;
+	hyphens: auto;
+	font-size: 1.1rem;
+	line-height: 1.4;
+}
+.main{
+	margin-inline: auto;
+}
+.container{
+	font-size: calc(0.5rem + 2vw);
+	display: flex;
+	flex-direction: column;
+}
+.nutrient{
+	border-top: 0.15em dotted var(--nord11);
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+.nutrient > .name{
+	word-break: break-all; /*TODO: rm and fix qutebrowser*/
+	flex: 1 0 0;
+}
+.nutrient > .numeric{
+	margin-inline: calc(2vw + 0.5em);
+	margin-left: 0.5em;
+	flex-grow: 0;
+	flex-shrink: 0;
+}
+/*.nutrient > span:first-of-type{*/
+.numeric + .numeric{
+	margin-inline: calc(1vw + 0.25em);
+}
+.nutrient > :last-child{
+	margin-inline-end: 0;
+	flex-basis: 2em;
+	text-align: right;
+}
+.hide{
+	opacity:0;
+}
+.container > .container > div:nth-child(n+2){
+	border-top: 0.15em dotted var(--nord10);
+	padding-left: min(2em, 7%);
+}
+.container__vitamins{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+.container__vitamins > .vitamin{
+	flex: 0 0 33%;
+	font-size: 2.75vw;
+}
+span.name::after {
+	content: ":";
+}
+span.numeric:last-child::before{
+	content: "(";
+}
+span.numeric:last-child::after{
+	content: ")";
+}
+span.numeric:last-child{
+	margin-inline: 0;
+}
+.main>header{
+	font-weight: bold;
+}
+.container__vitamins > header{
+	width: 100%;
+	border-bottom: 0.15em dotted var(--nord10);
+	border-top: 0.15em dotted var(--nord11);
+}
+.container__vitamins{
+	border-bottom: 0.15em dotted var(--nord10);
+}
+.energy{
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+.energy .name{
+	word-break:keep-all;
+	flex-wrap: nowrap;
+}
+@media only screen and (max-width: 370px){
+	.container__vitamins > .vitamin{
+		flex: 0 0 50%;
+		font-size: 4vw;
+	}
+
+}
+@media only screen and (max-width: 200px){
+	.container__vitamins > .vitamin{
+		font-size: 7vw;
+	}
+	.container__vitamins{
+		flex-direction: column;
+		flex-wrap: nowrap;
+	}
+	.vitamin{
+		display: flex;
+		justify-content: space-between;
+	}
+	.vitamin > *{
+		flex-basis: 0px;
+	}
+	.vitamin .name{
+		flex-grow: 2;
+	}
+	.vitamin .numeric{
+		text-align: right;
+		flex-grow: 1;
+	}
+}

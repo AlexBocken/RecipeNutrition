@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang=de>
+<head>
+        <title>Nutrition Sheet template</title>
+        <link rel='stylesheet' type='text/css' href="nutrition.css">
+        <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0">
+</head>
+<body>
+	<div class="container main">
+		<header>Nährwerte pro Portion</header>
+		<div class="nutrient energy">
+			<div class="name">Energie</div>
+			<div class="numeric">{{Energy}}</div>
+			<div class="numeric">{{Energy_ri}}</div>
+		</div>
+		<div class="container">
+			<div class="nutrient">
+				<div class=name>Fett</div>
+				<div class=numeric>{{Fat}}</div>
+				<div class=numeric>{{Fat_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class=name>gesättigte Fettsäuren</div>
+				<div class=numeric>{{Saturated}}</div>
+				<div class="numeric hide">{{Saturated_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class=name>einfach ungesättigt</div>
+				<div class=numeric>{{Monounsaturated}}</div>
+				<div class="numeric hide">{{Monounsaturated_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class=name>mehrfach ungesättigt</div>
+				<div class=numeric>{{Polyunsaturated}}</div>
+				<div class="numeric hide">{{Polyunsaturated_ri}}</div>
+			</div>
+		</div>
+		<div class="container">
+			<div class="nutrient">
+				<div class=name>Kohlenhydrate</div>
+				<div class=numeric>{{Carbs}}</div>
+				<div class=numeric>{{Carbs_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class=name>davon Zucker</div>
+				<div class=numeric>{{Sugars}}</div>
+				<div class="numeric hide">{{Sugars_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class=name>Stärke</div>
+				<div class=numeric>{{Starch}}</div>
+				<div class="numeric hide">{{Starch_ri}}</div>
+			</div>
+
+		</div>
+		<div class="nutrient">
+			<div class="name">Nahrungsfasern</div>
+			<div class="numeric">{{Fiber}}</div>
+			<div class="numeric hide">{{Fiber_ri}}</div>
+		</div>
+		<div class="container">
+			<div class="nutrient">
+				<div class="name">Protein</div>
+				<div class="numeric">{{Protein}}</div>
+				<div class="numeric">{{Protein_ri}}</div>
+				<!--Bodybuilding.com recommended amounts (mg per kg of bodyweight)
+				Histidine 8-10
+				Lysine 12
+				Phenylalanine 14
+				Methionine 12
+				BCAA: (Valine, Leucine, Iso-leucine) (16, 16, 10-12)
+				Threonine 8-->
+			</div>
+			<div class="nutrient">
+				<div class="name">Histidine</div>
+				<div class="numeric">{{Histidine}}</div>
+				<div class="numeric">{{Histidine_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class="name">Lysine</div>
+				<div class="numeric">{{Lysine}}</div>
+				<div class="numeric">{{Lysine_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class="name">Phenylalanine</div>
+				<div class="numeric">{{Phenylalanine}}</div>
+				<div class="numeric">{{Phenylalanine_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class="name">Methionine</div>
+				<div class="numeric">{{Methionine}}</div>
+				<div class="numeric">{{Methionine_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class="name">BCAA</div>
+				<div class="numeric">{{BCAA}}</div>
+				<div class="numeric">{{BCAA_ri}}</div>
+			</div>
+			<div class="nutrient">
+				<div class="name">Threonine</div>
+				<div class="numeric">{{Threonine}}</div>
+				<div class="numeric">{{Threonine_ri}}</div>
+			</div>
+		</div>
+		<div class="nutrient">
+			<div class="name">Salz</div>
+			<div class="numeric">{{Sodium}}</div>
+			<div class="numeric">{{Sodium_ri}}</div>
+		</div>
+		<div class="container__vitamins">
+			<header>Vitamine und Mineralstoffe</header>
+			<div class="vitamin">
+				<span class="name">Vitamin A</span>
+				<span class="numeric">{{VitaminA}}</span>
+				<span class="numeric">{{VitaminA_ri}}</span>
+			</div>
+			<div class="vitamin">
+				<span class="name">Vitamin B6</span>
+				<span class="numeric">{{B6(Pyridoxine)}}</span>
+				<span class="numeric">{{B6(Pyridoxine)_ri}}</span>
+			</div>
+			<div class="vitamin">
+				<span class="name">Vitamin B12</span>
+				<span class="numeric">{{B12(Cobalamin)}}</span>
+				<span class="numeric">{{B12(Cobalamin)_ri}}</span>
+			</div>
+			<div class="vitamin">
+				<span class="name">Vitamin C</span>
+				<span class="numeric">{{VitaminC}}</span>
+				<span class="numeric">{{VitaminC_ri}}</span>
+			</div>
+			<div class="vitamin">
+				<span class="name">Vitamin D</span>
+				<span class="numeric">{{VitaminD}}</span>
+				<span class="numeric">{{VitaminD_ri}}</span>
+			</div>
+			<div class="vitamin">
+				<span class="name">Vitamin K</span>
+				<span class="numeric">{{VitaminK}}</span>
+				<span class="numeric">{{VitaminK_ri}}</span>
+			</div>
+
+			<div class="vitamin">
+				<span class="name">Kalzium</span>
+				<span class="numeric">{{Calcium}}</span>
+				<span class="numeric">{{Calcium_ri}}</span>
+			</div>
+			<div class="vitamin">
+				<span class="name">Eisen</span>
+				<span class="numeric">{{Iron}}</span>
+				<span class="numeric">{{Iron_ri}}</span>
+			</div>
+			<div class="vitamin">
+				<span class="name">Kalium</span>
+				<span class="numeric">{{Potassium}}</span>
+				<span class="numeric">{{Potassium_ri}}</span>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>
+<script src="https://bocken.org/detect_mobile.js"></script>
